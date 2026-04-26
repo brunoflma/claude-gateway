@@ -1,0 +1,565 @@
+// ============================================================================
+// Claude for Office → Zenmux CORS Proxy v1.0
+// - mode=free: routes to free DeepSeek/GLM models with 429 fallback
+// - mode=paid: routes to real Anthropic models via Zenmux billing
+// - Reads config from gateway-config.json (hot-reloaded on each request)
+// ============================================================================
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
+
+const PORT = 8443;
+const TARGET_HOST = 'zenmux.ai';
+const CONFIG_PATH = path.join(__dirname, 'gateway-config.json');
+const STARTED_AT = new Date();
+let requestCount = 0;
+// Cache reasoning_content from DeepSeek responses to reinject on follow-ups
+// Key: tool_call_id, Value: reasoning_content string
+const reasoningCache = new Map();
+
+// Logging
+const LOG_DIR = path.join(__dirname, 'logs');
+if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+const logStream = fs.createWriteStream(path.join(LOG_DIR, 'proxy.log'), { flags: 'a' });
+function log(...args) {
+  const line = `[${new Date().toISOString()}] ${args.join(' ')}`;
+  console.log(line);
+  logStream.write(line + '\n');
+}
+
+// SSL
+const sslOpts = {
+  key: fs.readFileSync(path.join(__dirname, 'localhost.key')),
+  cert: fs.readFileSync(path.join(__dirname, 'localhost.crt')),
+};
+
+// Load config (hot-reload)
+function loadConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+  } catch {
+    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+  }
+}
+
+function collect(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', c => chunks.push(c));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+}
+
+function corsHeaders(req) {
+  return {
+    'access-control-allow-origin': req.headers['origin'] || '*',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': '*',
+    'access-control-expose-headers': 'x-request-id, request-id',
+    'access-control-allow-private-network': 'true',
+  };
+}
+
+// Anthropic-format models (accepted by Office add-in)
+const ANTHROPIC_MODELS = {
+  data: [
+    { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7', created_at: '2026-04-10T00:00:00Z', type: 'model' },
+    { id: 'claude-opus-4-6', display_name: 'Claude Opus 4.6', created_at: '2026-02-18T00:00:00Z', type: 'model' },
+    { id: 'claude-sonnet-4-6', display_name: 'Claude Sonnet 4.6', created_at: '2026-02-18T00:00:00Z', type: 'model' },
+  ],
+  has_more: false,
+  first_id: 'claude-opus-4-7',
+  last_id: 'claude-sonnet-4-6',
+};
+
+// Free mode: map Anthropic model names → specific free models
+const FREE_MODEL_MAP = {
+  'claude-opus-4-7': 'deepseek/deepseek-v4-pro-free',
+  'claude-opus-4-6': 'deepseek/deepseek-v4-pro-free',
+  'claude-sonnet-4-6': 'deepseek/deepseek-v4-flash-free',
+};
+
+// Convert Anthropic tool definition → OpenAI function tool
+function anthropicToolToOpenAI(tool) {
+  // Sanitize schema: DeepSeek requires type:"object" — the Word add-in
+  // sometimes sends tools with null or empty input_schema
+  let params = tool.input_schema;
+  if (!params || typeof params !== 'object' || !params.type) {
+    params = { type: 'object', properties: {}, required: [] };
+  }
+  return {
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: tool.description || '',
+      parameters: params,
+    },
+  };
+}
+
+// Convert Anthropic Messages → OpenAI Chat Completions
+function anthropicToOpenAI(body, model) {
+  const messages = [];
+  if (body.system) {
+    const sysText = Array.isArray(body.system)
+      ? body.system.map(s => s.text || '').join('\n')
+      : String(body.system);
+    messages.push({ role: 'system', content: sysText });
+  }
+  for (const msg of (body.messages || [])) {
+    const role = msg.role;
+    if (typeof msg.content === 'string') {
+      messages.push({ role, content: msg.content });
+    } else if (Array.isArray(msg.content)) {
+      // Handle mixed content blocks (text + tool_use + tool_result)
+      const textParts = [];
+      const toolCalls = [];
+      const toolResults = [];
+      for (const block of msg.content) {
+        if (block.type === 'text') {
+          textParts.push(block.text);
+        } else if (block.type === 'tool_use') {
+          toolCalls.push({
+            id: block.id,
+            type: 'function',
+            function: { name: block.name, arguments: JSON.stringify(block.input || {}) },
+          });
+        } else if (block.type === 'tool_result') {
+          const resultText = typeof block.content === 'string'
+            ? block.content
+            : Array.isArray(block.content)
+              ? block.content.map(b => b.text || '').join('')
+              : JSON.stringify(block.content || '');
+          toolResults.push({ tool_call_id: block.tool_use_id, role: 'tool', content: resultText });
+        }
+      }
+      if (role === 'assistant' && toolCalls.length > 0) {
+        const assistantMsg = { role: 'assistant', content: textParts.join('') || null, tool_calls: toolCalls };
+        // DeepSeek requires reasoning_content in assistant messages with tool_calls
+        if (model.includes('deepseek')) {
+          const cachedReasoning = reasoningCache.get(toolCalls[0].id);
+          // Use cached reasoning if available, otherwise inject empty string
+          assistantMsg.reasoning_content = cachedReasoning || '';
+          log(`  INJECT reasoning for ${toolCalls[0].id}: ${cachedReasoning ? cachedReasoning.length + ' chars (cached)' : 'empty (no cache)'}`);
+        }
+        messages.push(assistantMsg);
+      } else if (toolResults.length > 0) {
+        for (const tr of toolResults) messages.push(tr);
+      } else {
+        messages.push({ role, content: textParts.join('') });
+      }
+    }
+  }
+  const req = { model, messages, max_tokens: body.max_tokens || 4096, stream: body.stream === true };
+  if (body.temperature !== undefined) req.temperature = body.temperature;
+  // Disable DeepSeek thinking/reasoning mode to prevent reasoning_content round-trip issues
+  if (model.includes('deepseek')) {
+    // Method 1: OpenAI-compatible thinking control
+    req.thinking = { type: 'disabled' };
+    // Method 2: reasoning_effort (used by some providers like DeepInfra)
+    req.reasoning_effort = 'none';
+    // Method 3: extra_body for vLLM-style providers
+    req.enable_thinking = false;
+  }
+  // Strip reasoning_content from assistant messages for non-DeepSeek models
+  // (DeepSeek needs it reinjected for round-trip, already handled above)
+  if (!model.includes('deepseek')) {
+    for (const m of req.messages) {
+      if (m.reasoning_content) delete m.reasoning_content;
+    }
+  }
+  // Pass tools if present
+  if (body.tools && body.tools.length > 0) {
+    req.tools = body.tools.map(anthropicToolToOpenAI);
+  }
+  if (body.tool_choice) {
+    if (body.tool_choice === 'auto') req.tool_choice = 'auto';
+    else if (body.tool_choice === 'any') req.tool_choice = 'required';
+    else if (body.tool_choice?.type === 'tool') req.tool_choice = { type: 'function', function: { name: body.tool_choice.name } };
+    else req.tool_choice = 'auto';
+  }
+  return req;
+}
+
+// Convert OpenAI response → Anthropic Messages response
+function openaiToAnthropic(data, requestedModel) {
+  if (!data.choices || !data.choices.length) return data;
+  const choice = data.choices[0];
+  const content = [];
+  // Add text if present
+  if (choice.message?.content) {
+    content.push({ type: 'text', text: choice.message.content });
+  }
+  // Convert tool_calls to tool_use blocks
+  if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
+    for (const tc of choice.message.tool_calls) {
+      let args = {};
+      try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
+      content.push({
+        type: 'tool_use',
+        id: tc.id || ('toolu_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+        name: tc.function.name,
+        input: args,
+      });
+    }
+  }
+  // Fallback: if no content at all, add empty text
+  if (content.length === 0) {
+    content.push({ type: 'text', text: '' });
+  }
+  const stopReason = choice.finish_reason === 'tool_calls' ? 'tool_use'
+    : choice.finish_reason === 'stop' ? 'end_turn'
+    : (choice.finish_reason || 'end_turn');
+  return {
+    id: 'msg_' + (data.id || Date.now().toString(36)),
+    type: 'message', role: 'assistant', model: requestedModel,
+    content,
+    stop_reason: stopReason,
+    stop_sequence: null,
+    usage: { input_tokens: data.usage?.prompt_tokens || 0, output_tokens: data.usage?.completion_tokens || 0 },
+  };
+}
+
+// Make upstream request
+function makeUpstreamRequest(url, bodyStr, headers, method) {
+  return new Promise((resolve, reject) => {
+    const pr = https.request(url, { method, headers, rejectUnauthorized: true }, resolve);
+    pr.on('error', reject);
+    pr.write(bodyStr);
+    pr.end();
+  });
+}
+
+// FREE MODE: primary model + fallback on errors
+async function tryFreeModels(anthropicBody, apiKey, method, config) {
+  const fallbackModels = config.free_models || ['deepseek/deepseek-v4-pro-free'];
+  const requestedModel = anthropicBody.model || '';
+  // Route specific Anthropic model names to specific free models
+  const primaryModel = FREE_MODEL_MAP[requestedModel] || fallbackModels[0];
+  // Build model chain: primary first, then fallbacks (excluding duplicates)
+  const models = [primaryModel, ...fallbackModels.filter(m => m !== primaryModel)];
+  const hasToolResult = (anthropicBody.messages || []).some(m =>
+    Array.isArray(m.content) && m.content.some(b => b.type === 'tool_result')
+  );
+  if (hasToolResult) log(`  tool_result round-trip`);
+  log(`  model mapping: ${requestedModel} → ${primaryModel}`);
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    const openaiBody = anthropicToOpenAI(anthropicBody, model);
+    const bodyStr = JSON.stringify(openaiBody);
+    
+    // Retry on 429 (rate limit) up to 3 times with delay
+    for (let retry = 0; retry < 3; retry++) {
+      if (retry > 0) {
+        log(`  429 retry ${retry + 1}/3 (wait 2s)`);
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      log(`  → ${model}${i > 0 ? ' (fallback)' : ''}${retry > 0 ? ` retry ${retry+1}` : ''}`);
+      const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
+      const headers = {
+        'content-type': 'application/json',
+        'authorization': `Bearer ${apiKey}`,
+        'host': TARGET_HOST,
+        'content-length': Buffer.byteLength(bodyStr),
+      };
+      const proxyRes = await makeUpstreamRequest(url, bodyStr, headers, method);
+      
+      if (proxyRes.statusCode === 429 && retry < 2) {
+        await collect(proxyRes); // drain
+        log(`  429 rate_limit`);
+        continue; // retry same model
+      }
+      if (proxyRes.statusCode === 400 && i < models.length - 1) {
+        const errBody = (await collect(proxyRes)).toString();
+        log(`  400 → fallback to next model | ${errBody.substring(0, 150)}`);
+        break; // try next model
+      }
+      // Success or final failure
+      return { proxyRes, bodyStr, usedModel: model, idx: i, needsConversion: true };
+    }
+  }
+  // All models exhausted, send last attempt
+  const lastModel = models[models.length - 1];
+  log(`  all models tried → final attempt: ${lastModel}`);
+  const openaiBody = anthropicToOpenAI(anthropicBody, lastModel);
+  const bodyStr = JSON.stringify(openaiBody);
+  const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
+  const headers = {
+    'content-type': 'application/json',
+    'authorization': `Bearer ${apiKey}`,
+    'host': TARGET_HOST,
+    'content-length': Buffer.byteLength(bodyStr),
+  };
+  const proxyRes = await makeUpstreamRequest(url, bodyStr, headers, 'POST');
+  return { proxyRes, bodyStr, usedModel: lastModel, idx: models.length - 1, needsConversion: true };
+}
+
+// PAID MODE: pass through to Anthropic on Zenmux
+async function routePaid(anthropicBody, apiKey, method, config) {
+  const requestedModel = anthropicBody.model || 'claude-sonnet-4-5';
+  const paidMap = config.paid_model_map || {};
+  const zenmuxModel = paidMap[requestedModel] || `anthropic/${requestedModel}`;
+  const openaiBody = anthropicToOpenAI(anthropicBody, zenmuxModel);
+  const bodyStr = JSON.stringify(openaiBody);
+  log(`  paid → ${zenmuxModel}`);
+  const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
+  const headers = {
+    'content-type': 'application/json',
+    'authorization': `Bearer ${apiKey}`,
+    'host': TARGET_HOST,
+    'content-length': Buffer.byteLength(bodyStr),
+  };
+  const proxyRes = await makeUpstreamRequest(url, bodyStr, headers, method);
+  return { proxyRes, bodyStr, usedModel: zenmuxModel, idx: 0, needsConversion: true };
+}
+
+// Stream OpenAI SSE → Anthropic SSE (with tool_calls support)
+function streamToAnthropic(proxyRes, res, requestedModel, cors) {
+  const rh = { ...cors, 'content-type': 'text/event-stream', 'cache-control': 'no-cache', 'connection': 'keep-alive' };
+  res.writeHead(200, rh);
+  const msgId = 'msg_' + Date.now().toString(36);
+
+  res.write(`event: message_start\ndata: ${JSON.stringify({type:'message_start',message:{id:msgId,type:'message',role:'assistant',model:requestedModel,content:[],stop_reason:null,stop_sequence:null,usage:{input_tokens:0,output_tokens:0}}})}\n\n`);
+  res.write(`event: content_block_start\ndata: ${JSON.stringify({type:'content_block_start',index:0,content_block:{type:'text',text:''}})}\n\n`);
+  res.write(`event: ping\ndata: ${JSON.stringify({type:'ping'})}\n\n`);
+
+  let buffer = '';
+  let done = false;
+  let blockIdx = 0;
+  let textBlockOpen = true;
+  // Track streaming tool calls: { index -> { id, name, args } }
+  const toolCalls = {};
+
+  const finish = (reason) => {
+    if (done) return;
+    done = true;
+    log(`  STREAM finish: reason=${reason} toolCalls=${Object.keys(toolCalls).length} textBlockOpen=${textBlockOpen}`);
+    // Close current text block if open
+    if (textBlockOpen) {
+      res.write(`event: content_block_stop\ndata: ${JSON.stringify({type:'content_block_stop',index:blockIdx})}\n\n`);
+      textBlockOpen = false;
+    }
+    // Emit tool_use blocks that were accumulated
+    for (const idx in toolCalls) {
+      const tc = toolCalls[idx];
+      blockIdx++;
+      let args = {};
+      try { args = JSON.parse(tc.args || '{}'); } catch {}
+      const toolId = tc.id || ('toolu_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+      log(`  STREAM tool_use: name=${tc.name} id=${toolId} argsLen=${(tc.args||'').length}`);
+      res.write(`event: content_block_start\ndata: ${JSON.stringify({type:'content_block_start',index:blockIdx,content_block:{type:'tool_use',id:toolId,name:tc.name,input:args}})}\n\n`);
+      res.write(`event: content_block_stop\ndata: ${JSON.stringify({type:'content_block_stop',index:blockIdx})}\n\n`);
+      // Cache reasoning_content for this tool_call so we can reinject it in the follow-up
+      if (reasoningContent && tc.id) {
+        reasoningCache.set(tc.id, reasoningContent);
+        log(`  CACHE reasoning for ${tc.id}: ${reasoningContent.length} chars`);
+      }
+    }
+    const stopReason = Object.keys(toolCalls).length > 0 ? 'tool_use' : (reason || 'end_turn');
+    log(`  STREAM end: stopReason=${stopReason}`);
+    res.write(`event: message_delta\ndata: ${JSON.stringify({type:'message_delta',delta:{stop_reason:stopReason,stop_sequence:null},usage:{output_tokens:0}})}\n\n`);
+    res.write(`event: message_stop\ndata: ${JSON.stringify({type:'message_stop'})}\n\n`);
+  };
+  let reasoningContent = '';  // Accumulate DeepSeek reasoning_content
+
+  proxyRes.on('data', chunk => {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const d = line.substring(6).trim();
+      if (d === '[DONE]') { finish(); return; }
+      try {
+        const c = JSON.parse(d);
+        const delta = c.choices?.[0]?.delta;
+        if (!delta) continue;
+        // Capture reasoning_content from DeepSeek (don't forward to add-in)
+        if (delta.reasoning_content) {
+          reasoningContent += delta.reasoning_content;
+        }
+        // Text content
+        if (delta.content) {
+          res.write(`event: content_block_delta\ndata: ${JSON.stringify({type:'content_block_delta',index:0,delta:{type:'text_delta',text:delta.content}})}\n\n`);
+        }
+        // Tool calls (streamed incrementally)
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            if (!toolCalls[idx]) toolCalls[idx] = { id: '', name: '', args: '' };
+            if (tc.id) toolCalls[idx].id = tc.id;
+            if (tc.function?.name) toolCalls[idx].name += tc.function.name;
+            if (tc.function?.arguments) toolCalls[idx].args += tc.function.arguments;
+          }
+        }
+        // Check finish reason
+        if (c.choices?.[0]?.finish_reason) {
+          finish(c.choices[0].finish_reason === 'tool_calls' ? 'tool_use' : 'end_turn');
+          return;
+        }
+      } catch {}
+    }
+  });
+  proxyRes.on('end', () => { finish(); res.end(); });
+  proxyRes.on('error', e => { log(`  SSE err: ${e.message}`); finish(); res.end(); });
+}
+
+async function handleRequest(req, res) {
+  const method = req.method.toUpperCase();
+  const urlPath = req.url.split('?')[0];
+  const config = loadConfig();
+
+  log(`>>> ${method} ${urlPath} [mode:${config.mode}]`);
+
+  if (method === 'OPTIONS') { res.writeHead(200, corsHeaders(req)); return res.end(); }
+  if (urlPath === '/ping' || urlPath === '/health') {
+    res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+  if (urlPath === '/status' && method === 'GET') {
+    const up = Math.floor((Date.now() - STARTED_AT.getTime()) / 1000);
+    const body = JSON.stringify({
+      ok: true, service: 'claude-gateway-proxy', version: '1.0.0',
+      mode: config.mode, startedAt: STARTED_AT.toISOString(),
+      uptimeHuman: `${Math.floor(up/3600)}h ${Math.floor((up%3600)/60)}m ${up%60}s`,
+      requestCount, freeModels: config.free_models, port: PORT,
+    }, null, 2);
+    res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
+    return res.end(body);
+  }
+  if (urlPath.includes('/models') && method === 'GET') {
+    const body = JSON.stringify(ANTHROPIC_MODELS);
+    res.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), ...corsHeaders(req) });
+    return res.end(body);
+  }
+
+  // Collect body
+  requestCount++;
+  const reqBody = await collect(req);
+  let bodyStr = reqBody.toString();
+  let isStreaming = false;
+  let requestedModel = 'claude-sonnet-4-6';
+  let anthropicBody = null;
+
+  if (bodyStr && urlPath.includes('/messages')) {
+    try {
+      anthropicBody = JSON.parse(bodyStr);
+      isStreaming = anthropicBody.stream === true;
+      requestedModel = anthropicBody.model || requestedModel;
+      log(`  model=${requestedModel} stream=${isStreaming} max_tokens=${anthropicBody.max_tokens}`);
+
+      // Intercept model validation pings (max_tokens=1) — respond locally
+      if (anthropicBody.max_tokens === 1 || anthropicBody.max_tokens === '1') {
+        log(`  VALIDATION PING → synthetic response for ${requestedModel}`);
+        const synth = {
+          id: 'msg_validation_' + Date.now().toString(36),
+          type: 'message', role: 'assistant', model: requestedModel,
+          content: [{ type: 'text', text: '' }],
+          stop_reason: 'end_turn', stop_sequence: null,
+          usage: { input_tokens: 0, output_tokens: 1 },
+        };
+        res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
+        return res.end(JSON.stringify(synth));
+      }
+    } catch (e) { log(`  WARN: parse: ${e.message}`); }
+  }
+
+  const apiKey = req.headers['x-api-key'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+
+  try {
+    let result;
+    if (anthropicBody) {
+      result = config.mode === 'paid'
+        ? await routePaid(anthropicBody, apiKey, method, config)
+        : await tryFreeModels(anthropicBody, apiKey, method, config);
+    } else {
+      const m = (config.free_models || ['deepseek/deepseek-v4-pro-free'])[0];
+      const fwdStr = JSON.stringify({ model: m, ...JSON.parse(bodyStr || '{}') });
+      const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
+      const hdrs = { 'content-type':'application/json', 'authorization':`Bearer ${apiKey}`, 'host':TARGET_HOST, 'content-length':Buffer.byteLength(fwdStr) };
+      const proxyRes = await makeUpstreamRequest(url, fwdStr, hdrs, method);
+      result = { proxyRes, bodyStr: fwdStr, usedModel: m, idx: 0, needsConversion: true };
+    }
+
+    if (!result) {
+      log(`  ERROR: All models failed or were skipped`);
+      res.writeHead(503, { 'content-type':'application/json', ...corsHeaders(req) });
+      return res.end(JSON.stringify({ type:'error', error:{ type:'api_error',
+        message: `[${config.mode.toUpperCase()}] Todos os modelos falharam. Tente novamente em alguns minutos.` }}));
+    }
+
+    const { proxyRes, usedModel, idx } = result;
+    log(`  ← ${proxyRes.statusCode} (via ${usedModel}${idx > 0 ? ' [fallback]' : ''})`);
+
+    // STREAMING
+    if (isStreaming) {
+      if (proxyRes.statusCode >= 400) {
+        const errBody = (await collect(proxyRes)).toString();
+        log(`  STREAM ERROR: ${errBody.substring(0, 200)}`);
+        let errMsg;
+        if (proxyRes.statusCode === 429) {
+          errMsg = `[${config.mode.toUpperCase()}] Limite atingido em todos os modelos. Tente em alguns minutos.`;
+        } else if (proxyRes.statusCode === 402) {
+          errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou alterne para modo Gratuito.`;
+        } else {
+          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${errBody.substring(0, 150)}`;
+        }
+        const ae = JSON.stringify({ type:'error', error:{
+          type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
+          message: errMsg,
+        }});
+        res.writeHead(proxyRes.statusCode, { 'content-type':'application/json', ...corsHeaders(req) });
+        return res.end(ae);
+      }
+      return streamToAnthropic(proxyRes, res, requestedModel, corsHeaders(req));
+    }
+
+    // BUFFERED
+    let respBody = await collect(proxyRes);
+    const enc = (proxyRes.headers['content-encoding'] || '').toLowerCase();
+    if (enc === 'gzip') respBody = await new Promise((r, j) => zlib.gunzip(respBody, (e, b) => e ? j(e) : r(b)));
+    else if (enc === 'br') respBody = await new Promise((r, j) => zlib.brotliDecompress(respBody, (e, b) => e ? j(e) : r(b)));
+    let respStr = respBody.toString();
+
+    if (proxyRes.statusCode >= 400) {
+      log(`  ERROR ${proxyRes.statusCode}: ${respStr.substring(0, 200)}`);
+      let errMsg;
+      if (proxyRes.statusCode === 429) {
+        errMsg = `[${config.mode.toUpperCase()}] Limite atingido. Tente novamente.`;
+      } else if (proxyRes.statusCode === 402) {
+        errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou use modo Gratuito.`;
+      } else {
+        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${respStr.substring(0, 150)}`;
+      }
+      const ae = JSON.stringify({ type:'error', error:{
+        type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
+        message: errMsg,
+      }});
+      res.writeHead(proxyRes.statusCode, { 'content-type':'application/json', ...corsHeaders(req) });
+      return res.end(ae);
+    }
+
+    if (urlPath.includes('/messages') && method === 'POST') {
+      try { respStr = JSON.stringify(openaiToAnthropic(JSON.parse(respStr), requestedModel)); log('  Converted OK'); }
+      catch (e) { log(`  WARN: resp parse: ${e.message}`); }
+    }
+
+    res.writeHead(proxyRes.statusCode, { 'content-type':'application/json', 'content-length':Buffer.byteLength(respStr), ...corsHeaders(req) });
+    res.end(respStr);
+  } catch (err) {
+    log(`  ERROR: ${err.message}`);
+    res.writeHead(502, { 'content-type':'application/json', ...corsHeaders(req) });
+    res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: err.message } }));
+  }
+}
+
+https.createServer(sslOpts, handleRequest).listen(PORT, () => {
+  const cfg = loadConfig();
+  log(`Proxy v1.0 | port:${PORT} | mode:${cfg.mode}`);
+  log(`Free models: ${(cfg.free_models||[]).join(', ')}`);
+  log(`Paid map: ${Object.keys(cfg.paid_model_map||{}).length} entries`);
+});

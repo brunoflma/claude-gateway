@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Gateway - Comece Aqui</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0e17;color:#c8d6e5;line-height:1.7}
+.container{max-width:860px;margin:0 auto;padding:40px 24px}
+header{text-align:center;padding:60px 0 40px}
+header h1{font-size:2.4rem;font-weight:700;background:linear-gradient(135deg,#00b4d8,#0077b6,#023e8a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+header p{color:#7f8fa6;font-size:1rem;margin-bottom:14px}
+.badge{display:inline-block;background:linear-gradient(135deg,#00b4d8,#0077b6);color:#fff;padding:6px 20px;border-radius:20px;font-size:.8rem;font-weight:600}
+.section{background:linear-gradient(135deg,#111827,#1a1f2e);border:1px solid #1e293b;border-radius:16px;padding:32px;margin-bottom:24px;position:relative}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00b4d8,#0077b6,#023e8a);border-radius:16px 16px 0 0}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:linear-gradient(135deg,#00b4d8,#023e8a);border-radius:50%;color:#fff;font-weight:700;font-size:.9rem;margin-right:12px;flex-shrink:0}
+.section h2{display:flex;align-items:center;font-size:1.25rem;color:#f1f5f9;margin-bottom:16px}
+.section h3{color:#00b4d8;font-size:1rem;margin:20px 0 8px}
+code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;color:#00b4d8;border:1px solid #1e293b}
+pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
+pre code{background:none;border:none;padding:0;color:#c8d6e5}
+.highlight{color:#00b4d8;font-weight:600}
+.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
+.warn::before{content:'⚠️ ';font-size:1.1rem}
+.info{background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
+.info::before{content:'💡 '}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid #1e293b;font-size:.9rem}
+th{color:#00b4d8;font-weight:600;background:#0d1117}
+tr:hover{background:rgba(0,180,216,.04)}
+.tree{font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;line-height:1.9;color:#7f8fa6}
+.tree .f{color:#00b4d8}.tree .d{color:#fbbf24}
+footer{text-align:center;padding:40px 0 20px;color:#4a5568;font-size:.85rem}
+ul{padding-left:20px;margin:8px 0}
+li{margin:4px 0}
+ol{padding-left:20px;margin:8px 0}
+ol li{margin:6px 0}
+.model-card{display:flex;gap:10px;padding:12px;background:#0d1117;border-radius:10px;border:1px solid #1e293b;margin:8px 0;align-items:center}
+.model-card .arrow{color:#fbbf24;font-size:1.2rem}
+.model-card .from{color:#f1f5f9;font-weight:500;min-width:150px}
+.model-card .to{color:#00b4d8;font-weight:500}
+.os-tabs{display:flex;gap:8px;margin:12px 0}
+.os-tab{padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;border:1px solid #1e293b;background:#0d1117;color:#7f8fa6;transition:all .2s}
+.os-tab.active,.os-tab:hover{background:linear-gradient(135deg,#00b4d8,#023e8a);color:#fff;border-color:transparent}
+.os-content{display:none}.os-content.active{display:block}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>⚡ Claude Gateway</h1>
+  <p>Proxy local para o Claude for Office Add-in</p>
+  <span class="badge">v1.0 — Guia de Instalação</span>
+</header>
+
+<!-- REQUISITOS -->
+<div class="section">
+  <h2><span class="step-num">0</span> Pré-requisitos</h2>
+  <ul>
+    <li>Windows 10/11 ou macOS 12+</li>
+    <li>Microsoft Word, Excel ou PowerPoint (desktop)</li>
+    <li>Acesso ao <strong>Word Online</strong>, <strong>Excel Online</strong> ou <strong>PowerPoint Online</strong> para carregar o manifest</li>
+    <li>Conta gratuita no <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">ZenMux.ai</a> — copie sua API Key</li>
+  </ul>
+  <div class="info">
+    O pacote já inclui Node.js e Python embutidos.<br>
+    Não é necessário instalar nada além de extrair os arquivos.
+  </div>
+</div>
+
+<!-- PASSO 1 -->
+<div class="section">
+  <h2><span class="step-num">1</span> Extrair o pacote</h2>
+  <ol>
+    <li>Baixe o arquivo <code>claude-gateway-v1.0.zip</code></li>
+    <li>Extraia na pasta do seu sistema:</li>
+  </ol>
+  <div class="os-tabs">
+    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
+    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  </div>
+  <div class="os-content active" id="os-win-1">
+    <pre><code>C:\Users\SEU_USUARIO\.office-addin-dev-certs\</code></pre>
+  </div>
+  <div class="os-content" id="os-mac-1">
+    <pre><code>~/.office-addin-dev-certs/</code></pre>
+  </div>
+  <h3>Estrutura esperada</h3>
+  <div class="tree">
+    <span class="d">📁 .office-addin-dev-certs/</span><br>
+    ├── <span class="f">00 - Comece Aqui.html</span> &nbsp;← Este guia<br>
+    ├── <span class="f">Claude Gateway.vbs</span> &nbsp;← Lançador (Windows)<br>
+    ├── <span class="f">localhost.crt</span> &nbsp;← Certificado SSL<br>
+    ├── <span class="f">manifest.xml</span> &nbsp;← Manifesto do Add-in<br>
+    └── <span class="d">📁 .app/</span> &nbsp;← Pasta oculta (não modificar)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">proxy-cors.js</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">gateway_gui.py</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">gateway-config.json</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="d">📁 node/</span> &nbsp;← Node.js embutido<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="d">📁 python/</span> &nbsp;← Python embutido<br>
+  </div>
+</div>
+
+<!-- PASSO 2 -->
+<div class="section">
+  <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
+  <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
+  <div class="os-tabs">
+    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
+    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  </div>
+  <div class="os-content active" id="os-win-2">
+    <ol>
+      <li>Dê duplo-clique no arquivo <code>localhost.crt</code> (na raiz da pasta)</li>
+      <li>Clique em <span class="highlight">Instalar Certificado…</span></li>
+      <li>Selecione <code>Máquina Local</code> → <code>Avançar</code></li>
+      <li>Selecione <code>Colocar todos os certificados no repositório a seguir</code></li>
+      <li>Clique <code>Procurar…</code> → <code>Autoridades de Certificação Raiz Confiáveis</code></li>
+      <li>Confirme com <code>OK → Concluir</code></li>
+    </ol>
+  </div>
+  <div class="os-content" id="os-mac-2">
+    <ol>
+      <li>Dê duplo-clique no arquivo <code>localhost.crt</code></li>
+      <li>O <strong>Acesso às Chaves</strong> (Keychain Access) abrirá</li>
+      <li>O certificado será adicionado ao chaveiro <code>login</code></li>
+      <li>Localize o certificado <code>localhost</code> no chaveiro</li>
+      <li>Dê duplo-clique → expanda <span class="highlight">Confiança</span></li>
+      <li>Em "Ao usar este certificado", selecione <code>Confiar Sempre</code></li>
+      <li>Feche e confirme com sua senha</li>
+    </ol>
+  </div>
+  <div class="warn">Sem esse passo, o Word/Excel/PowerPoint rejeitará a conexão HTTPS com o proxy local.</div>
+</div>
+
+<!-- PASSO 3 -->
+<div class="section">
+  <h2><span class="step-num">3</span> Carregar o Add-in via Office Online</h2>
+  <p>Acesse qualquer um dos aplicativos online da Microsoft:</p>
+  <ul>
+    <li><a href="https://word.cloud.microsoft/pt-br/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">word.cloud.microsoft.com</a> — para Word</li>
+    <li><a href="https://excel.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">excel.cloud.microsoft.com</a> — para Excel</li>
+    <li><a href="https://powerpoint.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">powerpoint.cloud.microsoft.com</a> — para PowerPoint</li>
+  </ul>
+  <ol style="margin-top:12px">
+    <li>Abra um documento no aplicativo online desejado</li>
+    <li>Clique em <code>Inserir</code> → <code>Suplementos</code></li>
+    <li>Na janela de Suplementos do Office, clique em <span class="highlight">Gerenciar Meu Suplemento ▾</span></li>
+    <li>Selecione <code>Carregar Meu Suplemento</code></li>
+    <li>Clique em <code>Procurar…</code> e selecione o arquivo <code>manifest.xml</code></li>
+    <li>Clique em <code>Adicionar</code></li>
+  </ol>
+  <div class="info">Após carregar via Office Online, o add-in ficará disponível automaticamente no Word, Excel e PowerPoint Desktop (Windows e Mac) na sua conta Microsoft.</div>
+</div>
+
+<!-- PASSO 4 -->
+<div class="section">
+  <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
+  <div class="os-tabs">
+    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
+    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  </div>
+  <div class="os-content active" id="os-win-4">
+    <ol>
+      <li>Dê duplo-clique no <code>Claude Gateway.vbs</code></li>
+      <li>A interface gráfica abrirá com o painel de controle</li>
+      <li>Clique em <span class="highlight">Iniciar</span> para ativar o proxy</li>
+      <li>O indicador mudará para <span style="color:#22c55e;font-weight:600">● ATIVO</span></li>
+    </ol>
+  </div>
+  <div class="os-content" id="os-mac-4">
+    <ol>
+      <li>Abra o <strong>Terminal</strong></li>
+      <li>Execute o comando:
+        <pre><code>cd ~/.office-addin-dev-certs/.app && ./node/bin/node proxy-cors.js</code></pre>
+      </li>
+      <li>O proxy iniciará em <code>https://localhost:8443</code></li>
+    </ol>
+  </div>
+</div>
+
+<!-- PASSO 5 -->
+<div class="section">
+  <h2><span class="step-num">5</span> Usar o Claude no Office</h2>
+  <p>O add-in funciona no <strong>Word</strong>, <strong>Excel</strong> e <strong>PowerPoint</strong>. O processo é o mesmo em todos:</p>
+  <ol>
+    <li>Abra o <span class="highlight">Word</span>, <span class="highlight">Excel</span> ou <span class="highlight">PowerPoint</span> Desktop</li>
+    <li>Vá em <code>Suplementos</code> → <code>Mais Suplementos</code> → Pesquisar por <span class="highlight">Claude</span></li>
+    <li>O painel do Claude abrirá à direita</li>
+    <li>Escolha a opção <span class="highlight">Cloud provider or gateway</span></li>
+    <li>A <strong>Gateway URL</strong> deve ser a que o Claude Gateway gerou ao iniciar o proxy, basta copiar e colar</li>
+    <li>Em <strong>Token</strong>, cole sua <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">chave API do ZenMux</a></li>
+    <li>Selecione o modelo e comece a usar!</li>
+  </ol>
+</div>
+
+<!-- MODELOS -->
+<div class="section">
+  <h2><span class="step-num">6</span> Modelos e Modos de Operação</h2>
+  <h3>Mapeamento (Modo Gratuito)</h3>
+  <div class="model-card"><span class="from">Claude Opus 4.7</span><span class="arrow">→</span><span class="to">deepseek-v4-pro-free</span></div>
+  <div class="model-card"><span class="from">Claude Opus 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-pro-free</span></div>
+  <div class="model-card"><span class="from">Claude Sonnet 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-flash-free</span></div>
+  <h3>Modos</h3>
+  <table>
+    <tr><th>Modo</th><th>Descrição</th><th>Custo</th></tr>
+    <tr><td><span class="highlight">Gratuito</span></td><td>DeepSeek/GLM via ZenMux Free</td><td>$0</td></tr>
+    <tr><td><span class="highlight">Pago</span></td><td>Claude real via ZenMux Billing</td><td>Créditos ZenMux</td></tr>
+  </table>
+</div>
+
+<!-- TROUBLESHOOTING -->
+<div class="section">
+  <h2><span class="step-num">?</span> Solução de Problemas</h2>
+  <h3>"Could not retrieve the model list"</h3>
+  <p>O proxy não está ativo. Inicie pelo <code>Claude Gateway.vbs</code> (Windows) ou via Terminal (Mac).</p>
+  <h3>"The connection timed out. Please try again."</h3>
+  <p>Rate limit do modelo gratuito. Aguarde ~30s e tente novamente. O proxy faz fallback automático.<br>
+  Se o erro persistir, verifique o log de diagnóstico abaixo para identificar o problema.</p>
+  <h3>Certificado não confiável</h3>
+  <p>Repita o <strong>Passo 2</strong> — instale o certificado como confiável.</p>
+  <h3>Logs de diagnóstico</h3>
+  <div class="os-tabs">
+    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
+    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  </div>
+  <div class="os-content active" id="os-win-t">
+    <pre><code>Get-Content "$env:USERPROFILE\.office-addin-dev-certs\.app\logs\proxy.log" -Tail 30</code></pre>
+  </div>
+  <div class="os-content" id="os-mac-t">
+    <pre><code>tail -30 ~/.office-addin-dev-certs/.app/logs/proxy.log</code></pre>
+  </div>
+</div>
+
+<footer>
+  <p>Desenvolvido por Bruno Ferreira &nbsp;|&nbsp; v1.0</p>
+</footer>
+
+</div>
+<script>
+function switchOS(os, el) {
+  const tabs = el.parentElement.querySelectorAll('.os-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const section = el.closest('.section');
+  section.querySelectorAll('.os-content').forEach(c => {
+    c.classList.toggle('active', c.id.includes(os));
+  });
+}
+</script>
+</body>
+</html>
