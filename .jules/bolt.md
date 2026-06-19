@@ -1,0 +1,3 @@
+## 2024-05-18 - Synchronous Config Loading Blocks Event Loop
+**Learning:** `loadConfig` was reading `gateway-config.json` via synchronous `fs.readFileSync` on every incoming proxy request. While fine for a handful of requests, this codebase-specific anti-pattern blocks the Node.js event loop completely, causing heavy latency and potential unresponsiveness under load or during stream streaming.
+**Action:** Always prefer caching disk reads in memory with a short TTL (e.g., 2 seconds) instead of parsing JSON synchronously on every HTTP request if hot-reloading is still required.
