@@ -34,12 +34,29 @@ const sslOpts = {
   cert: fs.readFileSync(path.join(__dirname, 'localhost.crt')),
 };
 
-// Load config (hot-reload)
+// Config cache state for performance optimization
+let cachedConfig = null;
+let lastConfigMtime = 0;
+let lastConfigCheck = 0;
+
+// Load config (hot-reload with caching)
 function loadConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-  } catch {
-    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+    const now = Date.now();
+    // Debounce stat calls to max once per 2 seconds (2000ms) to avoid event loop blocking
+    if (!cachedConfig || (now - lastConfigCheck > 2000)) {
+      lastConfigCheck = now;
+      const stats = fs.statSync(CONFIG_PATH);
+      if (stats.mtimeMs > lastConfigMtime) {
+        cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+        lastConfigMtime = stats.mtimeMs;
+      }
+    }
+    return cachedConfig;
+  } catch (e) {
+    // Update cachedConfig to default to avoid re-throwing on every request if file is bad/missing
+    cachedConfig = cachedConfig || { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+    return cachedConfig;
   }
 }
 
