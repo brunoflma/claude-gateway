@@ -1,0 +1,4 @@
+## 2024-06-20 - [Denial of Service via Unbounded Stream Buffering and Upstream Error Leakage]
+**Vulnerability:** The proxy server previously collected incoming request chunks into an array without any size constraints, posing a memory exhaustion (DoS) risk from malformed or malicious large inputs. Additionally, up to 150 characters of upstream proxy responses were included in external API error messages.
+**Learning:** Node.js streams without explicit consumption limits can be trivially exploited to crash the server. Proxied errors often expose internal paths, keys, or stack traces and should be generalized.
+**Prevention:** Always enforce a hard size cap (e.g., 10MB) in functions wrapping Node streams into promises, destroying the stream immediately if exceeded. Mask all proxied application error bodies with generic response strings before relaying to clients.

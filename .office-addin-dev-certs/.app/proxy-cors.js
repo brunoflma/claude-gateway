@@ -46,7 +46,16 @@ function loadConfig() {
 function collect(stream) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    stream.on('data', c => chunks.push(c));
+    let length = 0;
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB limit
+    stream.on('data', c => {
+      length += c.length;
+      if (length > MAX_SIZE) {
+        stream.destroy(new Error('Payload too large'));
+        return reject(new Error('Payload too large'));
+      }
+      chunks.push(c);
+    });
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
   });
@@ -60,6 +69,8 @@ function corsHeaders(req) {
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
     'access-control-allow-private-network': 'true',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
   };
 }
 
@@ -506,7 +517,8 @@ async function handleRequest(req, res) {
         } else if (proxyRes.statusCode === 402) {
           errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou alterne para modo Gratuito.`;
         } else {
-          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${errBody.substring(0, 150)}`;
+          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Upstream service error.`; // Do not leak errBody
+
         }
         const ae = JSON.stringify({ type:'error', error:{
           type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
@@ -533,7 +545,8 @@ async function handleRequest(req, res) {
       } else if (proxyRes.statusCode === 402) {
         errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou use modo Gratuito.`;
       } else {
-        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${respStr.substring(0, 150)}`;
+        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Upstream service error.`; // Do not leak respStr
+
       }
       const ae = JSON.stringify({ type:'error', error:{
         type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
