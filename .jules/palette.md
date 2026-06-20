@@ -1,0 +1,3 @@
+## 2026-06-20 - [Accessible Tabs Implementation]
+**Learning:** Found custom tabs implemented as generic `<div>` tags with `onclick` handlers, rendering them completely inaccessible to keyboard and screen reader users. The "active" styling logic also only toggled classes without ARIA states.
+**Action:** Always replace `<div>` tabs with `<button role="tab">` elements grouped within a `[role="tablist"]`. Remember to also implement keyboard navigation (arrow keys for moving between tabs) as prescribed by WAI-ARIA authoring practices, set `role="tabpanel"` on content sections, and manage `aria-selected` dynamically in JS.
