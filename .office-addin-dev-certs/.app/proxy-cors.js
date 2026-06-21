@@ -52,9 +52,23 @@ function collect(stream) {
   });
 }
 
+// Validate Origin to prevent arbitrary websites from accessing the local proxy
 function corsHeaders(req) {
+  const origin = req.headers['origin'];
+  let allowedOrigin = 'null'; // Secure fallback
+
+  if (origin) {
+    const isAllowed = origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/) ||
+                      origin.match(/^https?:\/\/([a-zA-Z0-9-]+\.)*(office\.com|officeapps\.live\.com|microsoft365\.com|microsoft\.com)$/);
+    if (isAllowed) {
+      allowedOrigin = origin;
+    }
+  } else {
+    allowedOrigin = '*';
+  }
+
   return {
-    'access-control-allow-origin': req.headers['origin'] || '*',
+    'access-control-allow-origin': allowedOrigin,
     'access-control-allow-credentials': 'true',
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
