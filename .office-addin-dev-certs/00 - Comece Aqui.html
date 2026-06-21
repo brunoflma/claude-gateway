@@ -42,8 +42,10 @@ ol li{margin:6px 0}
 .model-card .from{color:#f1f5f9;font-weight:500;min-width:150px}
 .model-card .to{color:#00b4d8;font-weight:500}
 .os-tabs{display:flex;gap:8px;margin:12px 0}
+button.os-tab{font-family:inherit;}
 .os-tab{padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;border:1px solid #1e293b;background:#0d1117;color:#7f8fa6;transition:all .2s}
 .os-tab.active,.os-tab:hover{background:linear-gradient(135deg,#00b4d8,#023e8a);color:#fff;border-color:transparent}
+.os-tab:focus-visible{outline:2px solid #00b4d8;outline-offset:2px;}
 .os-content{display:none}.os-content.active{display:block}
 </style>
 </head>
@@ -78,9 +80,9 @@ ol li{margin:6px 0}
     <li>Baixe o arquivo <code>claude-gateway-v1.0.zip</code></li>
     <li>Extraia na pasta do seu sistema:</li>
   </ol>
-  <div class="os-tabs">
-    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
-    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button type="button" class="os-tab active" role="tab" aria-selected="true" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button type="button" class="os-tab" role="tab" aria-selected="false" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-1">
     <pre><code>C:\Users\SEU_USUARIO\.office-addin-dev-certs\</code></pre>
@@ -108,9 +110,9 @@ ol li{margin:6px 0}
 <div class="section">
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
   <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
-  <div class="os-tabs">
-    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
-    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button type="button" class="os-tab active" role="tab" aria-selected="true" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button type="button" class="os-tab" role="tab" aria-selected="false" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-2">
     <ol>
@@ -159,9 +161,9 @@ ol li{margin:6px 0}
 <!-- PASSO 4 -->
 <div class="section">
   <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
-  <div class="os-tabs">
-    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
-    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button type="button" class="os-tab active" role="tab" aria-selected="true" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button type="button" class="os-tab" role="tab" aria-selected="false" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-4">
     <ol>
@@ -223,9 +225,9 @@ ol li{margin:6px 0}
   <h3>Certificado não confiável</h3>
   <p>Repita o <strong>Passo 2</strong> — instale o certificado como confiável.</p>
   <h3>Logs de diagnóstico</h3>
-  <div class="os-tabs">
-    <div class="os-tab active" onclick="switchOS('win',this)">🪟 Windows</div>
-    <div class="os-tab" onclick="switchOS('mac',this)">🍎 macOS</div>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button type="button" class="os-tab active" role="tab" aria-selected="true" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button type="button" class="os-tab" role="tab" aria-selected="false" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-t">
     <pre><code>Get-Content "$env:USERPROFILE\.office-addin-dev-certs\.app\logs\proxy.log" -Tail 30</code></pre>
@@ -243,8 +245,12 @@ ol li{margin:6px 0}
 <script>
 function switchOS(os, el) {
   const tabs = el.parentElement.querySelectorAll('.os-tab');
-  tabs.forEach(t => t.classList.remove('active'));
+  tabs.forEach(t => {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
+  });
   el.classList.add('active');
+  el.setAttribute('aria-selected', 'true');
   const section = el.closest('.section');
   section.querySelectorAll('.os-content').forEach(c => {
     c.classList.toggle('active', c.id.includes(os));
