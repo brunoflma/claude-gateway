@@ -34,12 +34,22 @@ const sslOpts = {
   cert: fs.readFileSync(path.join(__dirname, 'localhost.crt')),
 };
 
-// Load config (hot-reload)
+let cachedConfig = null;
+let configCacheTime = 0;
+const CONFIG_CACHE_TTL = 2000; // 2 seconds
+
+// Load config (hot-reload with caching to prevent fs.readFileSync blocking the event loop)
 function loadConfig() {
+  const now = Date.now();
+  if (cachedConfig && (now - configCacheTime < CONFIG_CACHE_TTL)) {
+    return cachedConfig;
+  }
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    configCacheTime = now;
+    return cachedConfig;
   } catch {
-    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+    return cachedConfig || { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
   }
 }
 
