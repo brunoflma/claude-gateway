@@ -35,12 +35,28 @@ const sslOpts = {
 };
 
 // Load config (hot-reload)
-function loadConfig() {
+// ⚡ Bolt: Cache config in memory instead of using synchronous fs.readFileSync on every request
+// Expected impact: Removes main thread blocking during I/O operations, improving request throughput and reducing latency.
+let cachedConfig = { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+
+function updateConfigCache() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
   } catch {
-    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+    cachedConfig = { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
   }
+}
+
+// Initialize cache on startup
+updateConfigCache();
+
+// Asynchronously watch for config changes to prevent event loop blocking
+fs.watchFile(CONFIG_PATH, { interval: 1000 }, (curr, prev) => {
+  updateConfigCache();
+});
+
+function loadConfig() {
+  return cachedConfig;
 }
 
 function collect(stream) {
