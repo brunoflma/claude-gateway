@@ -46,7 +46,18 @@ function loadConfig() {
 function collect(stream) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    stream.on('data', c => chunks.push(c));
+    let totalLength = 0;
+    const MAX_PAYLOAD_SIZE = 50 * 1024 * 1024; // 50MB DoS protection limit
+
+    stream.on('data', c => {
+      totalLength += c.length;
+      if (totalLength > MAX_PAYLOAD_SIZE) {
+        stream.destroy(); // stop reading
+        return reject(new Error('Payload Too Large: exceeded 50MB limit'));
+      }
+      chunks.push(c);
+    });
+
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
   });

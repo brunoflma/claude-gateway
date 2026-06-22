@@ -1,0 +1,4 @@
+## 2026-06-22 - [Memory Exhaustion DoS in Proxy Request Collection]
+**Vulnerability:** The HTTP request `collect()` function in `proxy-cors.js` was reading streams fully into memory (`Buffer.concat(chunks)`) without enforcing any maximum size constraints. This created a potential for a DoS attack via large payload memory exhaustion.
+**Learning:** Raw Node.js stream-to-buffer conversion utilities lack inherent safeguards. When processing unbounded streams like external HTTP requests, the payload limits must be explicitly and forcefully imposed.
+**Prevention:** In this specific project context, whenever proxying HTTP streams or using standard Node request bodies, track the running length dynamically and aggressively invoke `stream.destroy()` while rejecting the promise once a sane maximum threshold (e.g. 50MB) is reached to prevent runaway memory usage.
