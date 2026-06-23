@@ -59,7 +59,17 @@ function loadConfig() {
 function collect(stream) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    stream.on('data', c => chunks.push(c));
+    let length = 0;
+    const MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB limit
+
+    stream.on('data', c => {
+      length += c.length;
+      if (length > MAX_PAYLOAD_SIZE) {
+        stream.destroy();
+        return reject(new Error('Payload too large (exceeds 10MB limit)'));
+      }
+      chunks.push(c);
+    });
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
   });
@@ -73,6 +83,10 @@ function corsHeaders(req) {
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
     'access-control-allow-private-network': 'true',
+    // Security headers
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY'
   };
 }
 
