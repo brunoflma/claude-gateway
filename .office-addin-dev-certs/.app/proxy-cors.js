@@ -35,12 +35,22 @@ const sslOpts = {
 };
 
 // Load config (hot-reload)
+let cachedConfig = null;
+let lastConfigLoad = 0;
 function loadConfig() {
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-  } catch {
-    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+  const now = Date.now();
+  // ⚡ Bolt: Cache the config for 2 seconds to avoid blocking the main thread
+  // with synchronous fs.readFileSync on every single request
+  if (cachedConfig && (now - lastConfigLoad < 2000)) {
+    return cachedConfig;
   }
+  try {
+    cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+  } catch {
+    cachedConfig = { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+  }
+  lastConfigLoad = now;
+  return cachedConfig;
 }
 
 function collect(stream) {
