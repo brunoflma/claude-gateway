@@ -1,0 +1,7 @@
+[2026-06-23T03:51:52.713Z] Proxy v1.0 | port:8443 | mode:free
+[2026-06-23T03:51:52.714Z] Free models: deepseek/deepseek-v4-pro-free, deepseek/deepseek-v4-flash-free, z-ai/glm-4.6v-flash-free
+[2026-06-23T03:51:52.714Z] Paid map: 9 entries
+[2026-06-23T03:51:54.758Z] >>> HEAD /status [mode:free]
+[2026-06-23T03:51:55.419Z]   ← 404 (via deepseek/deepseek-v4-pro-free)
+[2026-06-23T03:51:55.420Z]   ERROR 404:
+[2026-06-23T03:52:07.270Z] >>> GET /status [mode:free]

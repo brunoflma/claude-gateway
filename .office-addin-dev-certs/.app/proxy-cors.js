@@ -46,7 +46,17 @@ function loadConfig() {
 function collect(stream) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    stream.on('data', c => chunks.push(c));
+    let totalLength = 0;
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB limit
+
+    stream.on('data', c => {
+      totalLength += c.length;
+      if (totalLength > MAX_SIZE) {
+        stream.destroy();
+        return reject(new Error('Payload Too Large'));
+      }
+      chunks.push(c);
+    });
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
   });
@@ -60,6 +70,10 @@ function corsHeaders(req) {
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
     'access-control-allow-private-network': 'true',
+    // Security headers
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY'
   };
 }
 
@@ -439,36 +453,47 @@ async function handleRequest(req, res) {
 
   // Collect body
   requestCount++;
-  const reqBody = await collect(req);
-  let bodyStr = reqBody.toString();
+  let bodyStr = '';
   let isStreaming = false;
   let requestedModel = 'claude-sonnet-4-6';
   let anthropicBody = null;
-
-  if (bodyStr && urlPath.includes('/messages')) {
-    try {
-      anthropicBody = JSON.parse(bodyStr);
-      isStreaming = anthropicBody.stream === true;
-      requestedModel = anthropicBody.model || requestedModel;
-      log(`  model=${requestedModel} stream=${isStreaming} max_tokens=${anthropicBody.max_tokens}`);
-
-      // Intercept model validation pings (max_tokens=1) — respond locally
-      if (anthropicBody.max_tokens === 1 || anthropicBody.max_tokens === '1') {
-        log(`  VALIDATION PING → synthetic response for ${requestedModel}`);
-        const synth = {
-          id: 'msg_validation_' + Date.now().toString(36),
-          type: 'message', role: 'assistant', model: requestedModel,
-          content: [{ type: 'text', text: '' }],
-          stop_reason: 'end_turn', stop_sequence: null,
-          usage: { input_tokens: 0, output_tokens: 1 },
-        };
-        res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
-        return res.end(JSON.stringify(synth));
-      }
-    } catch (e) { log(`  WARN: parse: ${e.message}`); }
-  }
-
   const apiKey = req.headers['x-api-key'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+
+  try {
+    const reqBody = await collect(req);
+    bodyStr = reqBody.toString();
+
+    if (bodyStr && urlPath.includes('/messages')) {
+      try {
+        anthropicBody = JSON.parse(bodyStr);
+        isStreaming = anthropicBody.stream === true;
+        requestedModel = anthropicBody.model || requestedModel;
+        log(`  model=${requestedModel} stream=${isStreaming} max_tokens=${anthropicBody.max_tokens}`);
+
+        // Intercept model validation pings (max_tokens=1) — respond locally
+        if (anthropicBody.max_tokens === 1 || anthropicBody.max_tokens === '1') {
+          log(`  VALIDATION PING → synthetic response for ${requestedModel}`);
+          const synth = {
+            id: 'msg_validation_' + Date.now().toString(36),
+            type: 'message', role: 'assistant', model: requestedModel,
+            content: [{ type: 'text', text: '' }],
+            stop_reason: 'end_turn', stop_sequence: null,
+            usage: { input_tokens: 0, output_tokens: 1 },
+          };
+          res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
+          return res.end(JSON.stringify(synth));
+        }
+      } catch (e) { log(`  WARN: parse: ${e.message}`); }
+    }
+  } catch (err) {
+    if (err.message === 'Payload Too Large') {
+      res.writeHead(413, { 'content-type':'application/json', ...corsHeaders(req) });
+      return res.end(JSON.stringify({ type:'error', error:{ type:'request_too_large', message: 'Request payload is too large.' } }));
+    }
+    // other errors during collection
+    res.writeHead(400, { 'content-type':'application/json', ...corsHeaders(req) });
+    return res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: err.message } }));
+  }
 
   try {
     let result;
