@@ -1,0 +1,3 @@
+## 2026-02-20 - Semantic HTML for Custom Tabs
+**Learning:** Using `<div>` elements for interactive custom tabs breaks keyboard accessibility because they don't receive natural focus and lack proper semantic meaning for screen readers. In this app, many interactive custom UI elements like tabs need semantic attention.
+**Action:** Always prefer native elements like `<button>` when implementing custom interaction patterns (like the OS tabs in `00 - Comece Aqui.html`), combined with `role="tablist"` and `aria-selected` to ensure proper screen reader and keyboard accessibility, along with clear focus indicators.
