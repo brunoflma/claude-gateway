@@ -19,8 +19,12 @@ header p{color:#7f8fa6;font-size:1rem;margin-bottom:14px}
 .section h2{display:flex;align-items:center;font-size:1.25rem;color:#f1f5f9;margin-bottom:16px}
 .section h3{color:#00b4d8;font-size:1rem;margin:20px 0 8px}
 code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;color:#00b4d8;border:1px solid #1e293b}
-pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
+pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0;position:relative}
 pre code{background:none;border:none;padding:0;color:#c8d6e5}
+.copy-btn{position:absolute;top:8px;right:8px;background:#1e293b;color:#7f8fa6;border:1px solid #374151;border-radius:4px;padding:4px 8px;font-size:.75rem;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.copy-btn:hover{background:#374151;color:#fff}
+.copy-btn:focus-visible{outline:2px solid #00b4d8;outline-offset:2px}
+.copy-btn.copied{background:#22c55e;color:#fff;border-color:#22c55e}
 .highlight{color:#00b4d8;font-weight:600}
 .warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
 .warn::before{content:'⚠️ ';font-size:1.1rem}
@@ -255,6 +259,24 @@ function switchOS(os, el) {
     c.classList.toggle('active', c.id.includes(os));
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.textContent = 'Copiar';
+    btn.className = 'copy-btn';
+    btn.setAttribute('aria-label', 'Copiar comando');
+    btn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector('code').innerText.trim());
+        btn.textContent = 'Copiado ✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+      } catch (err) {}
+    };
+    pre.appendChild(btn);
+  });
+});
 </script>
 </body>
 </html>
