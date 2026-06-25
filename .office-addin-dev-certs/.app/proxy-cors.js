@@ -466,7 +466,14 @@ async function handleRequest(req, res) {
 
   // Collect body
   requestCount++;
-  const reqBody = await collect(req);
+  let reqBody;
+  try {
+    reqBody = await collect(req);
+  } catch (err) {
+    log(`  ERROR: ${err.message}`);
+    res.writeHead(413, { 'content-type': 'application/json', ...corsHeaders(req) });
+    return res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: err.message } }));
+  }
   let bodyStr = reqBody.toString();
   let isStreaming = false;
   let requestedModel = 'claude-sonnet-4-6';
