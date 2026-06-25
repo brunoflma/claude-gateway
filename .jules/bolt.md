@@ -1,3 +1,6 @@
 ## 2024-05-30 - Synchronous fs I/O bottleneck
 **Learning:** In a local proxy server receiving frequent, potentially concurrent requests (even just `/ping` checks from the frontend), reading a JSON configuration file via synchronous `fs.readFileSync` on every single request acts as a massive bottleneck, severely degrading latency and concurrency handling in Node.js' single-threaded event loop.
 **Action:** Always employ caching for file reads on the hot path (like configuration checks). Use a TTL (e.g., 2000ms) to preserve hot-reloading features without destroying performance.
+## 2026-06-25 - [SSE Streaming Stringification Overhead & Memory Leaks]
+**Learning:** `JSON.stringify` on large or frequently generated objects (like SSE chunks per token) adds significant overhead and can block the event loop. In addition, using an unbounded `Map` to cache deep reasoning strings (e.g. `reasoning_content`) created an O(N) memory leak as more tools were processed, contributing to GC pauses.
+**Action:** Use fast-path string interpolation to construct repetitive SSE chunks manually (`'{"key":' + JSON.stringify(val) + '}'`). Use a simple size check and `map.delete(map.keys().next().value)` as a fast, 1-line LRU cache mechanism for memory protection when caching deep data.
