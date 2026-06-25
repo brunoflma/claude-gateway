@@ -19,8 +19,11 @@ header p{color:#7f8fa6;font-size:1rem;margin-bottom:14px}
 .section h2{display:flex;align-items:center;font-size:1.25rem;color:#f1f5f9;margin-bottom:16px}
 .section h3{color:#00b4d8;font-size:1rem;margin:20px 0 8px}
 code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;color:#00b4d8;border:1px solid #1e293b}
-pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
+pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0;position:relative}
 pre code{background:none;border:none;padding:0;color:#c8d6e5}
+.copy-btn{position:absolute;top:8px;right:8px;padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.75rem;border:1px solid #1e293b;background:#1a1f2e;color:#7f8fa6;transition:all .2s;opacity:0.7;}
+.copy-btn:hover,.copy-btn:focus-visible{opacity:1;background:linear-gradient(135deg,#00b4d8,#023e8a);color:#fff;border-color:transparent;outline:none;}
+.copy-btn:focus-visible{outline:2px solid #00b4d8;outline-offset:2px;}
 .highlight{color:#00b4d8;font-weight:600}
 .warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
 .warn::before{content:'⚠️ ';font-size:1.1rem}
@@ -255,6 +258,28 @@ function switchOS(os, el) {
     c.classList.toggle('active', c.id.includes(os));
   });
 }
+
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'Copiar';
+  btn.setAttribute('aria-label', 'Copiar código');
+  btn.onclick = async () => {
+    const code = pre.querySelector('code');
+    if (code) {
+      await navigator.clipboard.writeText(code.textContent);
+      btn.textContent = 'Copiado!';
+      btn.style.background = '#22c55e';
+      btn.style.color = '#fff';
+      setTimeout(() => {
+        btn.textContent = 'Copiar';
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    }
+  };
+  pre.appendChild(btn);
+});
 </script>
 </body>
 </html>
