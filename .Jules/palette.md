@@ -1,3 +1,6 @@
 ## 2024-06-18 - Accessibility Improvement: OS Tabs
 **Learning:** Found custom tab components built using `<div>` tags which were inaccessible to keyboard and screen reader users. Replaced them with native `<button>` elements, added ARIA roles (`tablist`, `tab`, `tabpanel`), `aria-controls`, and `aria-selected` attributes. Added `:focus-visible` styling for clear keyboard focus indication.
 **Action:** Always prefer native interactive elements like `<button>` over `<div>` for interactive components to inherit built-in keyboard support. Remember to pair visual state changes (like an `active` class) with programmatic state changes (like `aria-selected`).
+## 2024-06-26 - Add copy button and improve link accessibility
+**Learning:** Added interactive features like copy buttons to code blocks, and extracted inline styles from external links to a reusable CSS class (`.external-link`). Noticed `focus-visible` styling was not explicitly set on links, which impacted keyboard navigation.
+**Action:** Always verify keyboard accessibility of any new UI elements, including explicit focus states and ARIA labels. Keep CSS centralized rather than using inline styles, especially for reusable elements like links.

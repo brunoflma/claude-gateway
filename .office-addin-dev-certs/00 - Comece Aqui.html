@@ -19,13 +19,19 @@ header p{color:#7f8fa6;font-size:1rem;margin-bottom:14px}
 .section h2{display:flex;align-items:center;font-size:1.25rem;color:#f1f5f9;margin-bottom:16px}
 .section h3{color:#00b4d8;font-size:1rem;margin:20px 0 8px}
 code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;color:#00b4d8;border:1px solid #1e293b}
-pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
+pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0;position:relative;padding-right:48px}
 pre code{background:none;border:none;padding:0;color:#c8d6e5}
+.copy-btn{position:absolute;top:8px;right:8px;background:#1e293b;color:#c8d6e5;border:1px solid #374151;border-radius:6px;padding:4px 8px;font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;font-weight:500;}
+.copy-btn:hover{background:#374151;color:#fff;}
+.copy-btn:focus-visible{outline:2px solid #00b4d8;outline-offset:2px;}
 .highlight{color:#00b4d8;font-weight:600}
 .warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
 .warn::before{content:'⚠️ ';font-size:1.1rem}
 .info{background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
 .info::before{content:'💡 '}
+a.external-link{color:#00b4d8;font-weight:600;text-decoration:underline;text-underline-offset:2px;transition:color 0.2s;}
+a.external-link:hover{color:#38bdf8;}
+a.external-link:focus-visible{outline:2px solid #00b4d8;outline-offset:4px;border-radius:2px;}
 table{width:100%;border-collapse:collapse;margin:12px 0}
 th,td{padding:10px 14px;text-align:left;border-bottom:1px solid #1e293b;font-size:.9rem}
 th{color:#00b4d8;font-weight:600;background:#0d1117}
@@ -64,7 +70,7 @@ ol li{margin:6px 0}
     <li>Windows 10/11 ou macOS 12+</li>
     <li>Microsoft Word, Excel ou PowerPoint (desktop)</li>
     <li>Acesso ao <strong>Word Online</strong>, <strong>Excel Online</strong> ou <strong>PowerPoint Online</strong> para carregar o manifest</li>
-    <li>Conta gratuita no <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">ZenMux.ai</a> — copie sua API Key</li>
+    <li>Conta gratuita no <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer" class="external-link">ZenMux.ai</a> — copie sua API Key</li>
   </ul>
   <div class="info">
     O pacote já inclui Node.js e Python embutidos.<br>
@@ -142,9 +148,9 @@ ol li{margin:6px 0}
   <h2><span class="step-num">3</span> Carregar o Add-in via Office Online</h2>
   <p>Acesse qualquer um dos aplicativos online da Microsoft:</p>
   <ul>
-    <li><a href="https://word.cloud.microsoft/pt-br/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">word.cloud.microsoft.com</a> — para Word</li>
-    <li><a href="https://excel.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">excel.cloud.microsoft.com</a> — para Excel</li>
-    <li><a href="https://powerpoint.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">powerpoint.cloud.microsoft.com</a> — para PowerPoint</li>
+    <li><a href="https://word.cloud.microsoft/pt-br/" target="_blank" rel="noopener noreferrer" class="external-link">word.cloud.microsoft.com</a> — para Word</li>
+    <li><a href="https://excel.cloud.microsoft/" target="_blank" rel="noopener noreferrer" class="external-link">excel.cloud.microsoft.com</a> — para Excel</li>
+    <li><a href="https://powerpoint.cloud.microsoft/" target="_blank" rel="noopener noreferrer" class="external-link">powerpoint.cloud.microsoft.com</a> — para PowerPoint</li>
   </ul>
   <ol style="margin-top:12px">
     <li>Abra um documento no aplicativo online desejado</li>
@@ -193,7 +199,7 @@ ol li{margin:6px 0}
     <li>O painel do Claude abrirá à direita</li>
     <li>Escolha a opção <span class="highlight">Cloud provider or gateway</span></li>
     <li>A <strong>Gateway URL</strong> deve ser a que o Claude Gateway gerou ao iniciar o proxy, basta copiar e colar</li>
-    <li>Em <strong>Token</strong>, cole sua <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">chave API do ZenMux</a></li>
+    <li>Em <strong>Token</strong>, cole sua <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer" class="external-link">chave API do ZenMux</a></li>
     <li>Selecione o modelo e comece a usar!</li>
   </ol>
 </div>
@@ -255,6 +261,24 @@ function switchOS(os, el) {
     c.classList.toggle('active', c.id.includes(os));
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copiar';
+    btn.setAttribute('aria-label', 'Copiar código');
+    btn.onclick = () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.innerText : pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copiado!';
+        setTimeout(() => btn.textContent = 'Copiar', 2000);
+      });
+    };
+    pre.appendChild(btn);
+  });
+});
 </script>
 </body>
 </html>
