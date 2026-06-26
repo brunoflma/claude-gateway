@@ -533,7 +533,7 @@ async function handleRequest(req, res) {
         } else if (proxyRes.statusCode === 402) {
           errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou alterne para modo Gratuito.`;
         } else {
-          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${errBody.substring(0, 150)}`;
+          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Verifique os logs do proxy para detalhes.`;
         }
         const ae = JSON.stringify({ type:'error', error:{
           type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
@@ -560,7 +560,7 @@ async function handleRequest(req, res) {
       } else if (proxyRes.statusCode === 402) {
         errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou use modo Gratuito.`;
       } else {
-        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${respStr.substring(0, 150)}`;
+        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Verifique os logs do proxy para detalhes.`;
       }
       const ae = JSON.stringify({ type:'error', error:{
         type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
@@ -580,7 +580,7 @@ async function handleRequest(req, res) {
   } catch (err) {
     log(`  ERROR: ${err.message}`);
     res.writeHead(502, { 'content-type':'application/json', ...corsHeaders(req) });
-    res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: err.message } }));
+    res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: 'Erro interno no proxy. Verifique os logs para detalhes.' } }));
   }
 }
 
