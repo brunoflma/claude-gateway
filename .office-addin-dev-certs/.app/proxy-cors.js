@@ -457,7 +457,7 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
         }
         // Text content
         if (delta.content) {
-          res.write(`event: content_block_delta\ndata: ${JSON.stringify({type:'content_block_delta',index:0,delta:{type:'text_delta',text:delta.content}})}\n\n`);
+          res.write(`event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":${JSON.stringify(delta.content)}}}\n\n`);
         }
         // Tool calls (streamed incrementally)
         if (delta.tool_calls) {
