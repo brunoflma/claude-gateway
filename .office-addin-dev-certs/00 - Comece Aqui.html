@@ -46,6 +46,13 @@ ol li{margin:6px 0}
 .os-tab.active,.os-tab:hover{background:linear-gradient(135deg,#00b4d8,#023e8a);color:#fff;border-color:transparent}
 .os-tab:focus-visible{outline:2px solid #00b4d8;outline-offset:2px}
 .os-content{display:none}.os-content.active{display:block}
+.code-wrapper{position:relative;margin:12px 0}
+.code-wrapper pre{margin:0;padding-right:85px}
+.copy-btn{position:absolute;top:8px;right:8px;background:#1e293b;color:#c8d6e5;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .2s;opacity:.8;display:flex;align-items:center;gap:4px}
+.copy-btn:hover{background:#334155;opacity:1}
+.copy-btn:focus-visible{outline:2px solid #00b4d8;outline-offset:2px}
+.copy-btn.copied{background:#059669;border-color:#059669;color:#fff}
+.copy-btn.error{background:#b91c1c;border-color:#b91c1c;color:#fff}
 </style>
 </head>
 <body>
@@ -242,6 +249,73 @@ ol li{margin:6px 0}
 
 </div>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  async function copyText(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch {
+        // Fall through to the legacy path for local files or denied permissions.
+      }
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    const copied = document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    if (!copied) {
+      throw new Error('copy_failed');
+    }
+  }
+
+  function showButtonState(btn, original, label, className, ariaLabel) {
+    btn.textContent = label;
+    btn.classList.add(className);
+    btn.setAttribute('aria-label', ariaLabel);
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove(className);
+      btn.setAttribute('aria-label', 'Copiar código');
+    }, 2000);
+  }
+
+  document.querySelectorAll('pre').forEach(pre => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-wrapper';
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.setAttribute('aria-label', 'Copiar código');
+    btn.setAttribute('aria-live', 'polite');
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar`;
+
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.innerText : pre.innerText;
+      const original = btn.innerHTML;
+
+      try {
+        await copyText(text.trim());
+        showButtonState(btn, original, '✓ Copiado', 'copied', 'Código copiado com sucesso');
+      } catch {
+        showButtonState(btn, original, 'Falhou', 'error', 'Não foi possível copiar o código');
+      }
+    });
+    wrapper.appendChild(btn);
+  });
+});
+
 function switchOS(os, el) {
   const tabs = el.parentElement.querySelectorAll('.os-tab');
   tabs.forEach(t => {

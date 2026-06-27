@@ -80,9 +80,34 @@ function collect(stream) {
   });
 }
 
+// 🛡️ Sentinel: Restrict CORS to authorized Office/localhost origins
+const ALLOWED_DOMAINS = [
+  'localhost',
+  '127.0.0.1',
+  'microsoft.com',
+  'officeapps.live.com',
+  'office.com'
+];
+
+function getSafeOrigin(req) {
+  const origin = req.headers['origin'];
+  if (!origin) return '*';
+  try {
+    if (origin === 'null') return 'null'; // Local file:// execution / Desktop Add-in
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    const isAllowed = ALLOWED_DOMAINS.some(domain =>
+      hostname === domain || hostname.endsWith('.' + domain)
+    );
+    return isAllowed ? origin : 'https://localhost:8443';
+  } catch (e) {
+    return 'https://localhost:8443';
+  }
+}
+
 function corsHeaders(req) {
   return {
-    'access-control-allow-origin': req.headers['origin'] || '*',
+    'access-control-allow-origin': getSafeOrigin(req),
     'access-control-allow-credentials': 'true',
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
@@ -387,6 +412,12 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
       res.write(`event: content_block_stop\ndata: ${JSON.stringify({type:'content_block_stop',index:blockIdx})}\n\n`);
       // Cache reasoning_content for this tool_call so we can reinject it in the follow-up
       if (reasoningContent && tc.id) {
+        // ⚡ Bolt: Implement FIFO eviction for unbounded reasoningCache Map
+        // Performance Impact: Prevents memory leak in long-running process, stabilizing heap usage.
+        // Benchmark: Ensures Map size doesn't exceed 500, capping memory overhead.
+        if (reasoningCache.size >= 500) {
+          reasoningCache.delete(reasoningCache.keys().next().value);
+        }
         reasoningCache.set(tc.id, reasoningContent);
         log(`  CACHE reasoning for ${tc.id}: ${reasoningContent.length} chars`);
       }
