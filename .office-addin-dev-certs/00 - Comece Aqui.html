@@ -22,6 +22,8 @@ code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia 
 pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
 pre code{background:none;border:none;padding:0;color:#c8d6e5}
 .highlight{color:#00b4d8;font-weight:600}
+.external-link{color:#00b4d8;font-weight:600;text-decoration:underline}
+.external-link:focus-visible{outline:2px solid #00b4d8;outline-offset:2px;border-radius:3px}
 .warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
 .warn::before{content:'⚠️ ';font-size:1.1rem}
 .info{background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.25);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:.9rem}
@@ -71,7 +73,7 @@ ol li{margin:6px 0}
     <li>Windows 10/11 ou macOS 12+</li>
     <li>Microsoft Word, Excel ou PowerPoint (desktop)</li>
     <li>Acesso ao <strong>Word Online</strong>, <strong>Excel Online</strong> ou <strong>PowerPoint Online</strong> para carregar o manifest</li>
-    <li>Conta gratuita no <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">ZenMux.ai</a> — copie sua API Key</li>
+    <li>Conta gratuita no <a class="external-link" href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer">ZenMux.ai</a> — copie sua API Key</li>
   </ul>
   <div class="info">
     O pacote já inclui Node.js e Python embutidos.<br>
@@ -149,9 +151,9 @@ ol li{margin:6px 0}
   <h2><span class="step-num">3</span> Carregar o Add-in via Office Online</h2>
   <p>Acesse qualquer um dos aplicativos online da Microsoft:</p>
   <ul>
-    <li><a href="https://word.cloud.microsoft/pt-br/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">word.cloud.microsoft.com</a> — para Word</li>
-    <li><a href="https://excel.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">excel.cloud.microsoft.com</a> — para Excel</li>
-    <li><a href="https://powerpoint.cloud.microsoft/" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">powerpoint.cloud.microsoft.com</a> — para PowerPoint</li>
+    <li><a class="external-link" href="https://word.cloud.microsoft/pt-br/" target="_blank" rel="noopener noreferrer">word.cloud.microsoft.com</a> — para Word</li>
+    <li><a class="external-link" href="https://excel.cloud.microsoft/" target="_blank" rel="noopener noreferrer">excel.cloud.microsoft.com</a> — para Excel</li>
+    <li><a class="external-link" href="https://powerpoint.cloud.microsoft/" target="_blank" rel="noopener noreferrer">powerpoint.cloud.microsoft.com</a> — para PowerPoint</li>
   </ul>
   <ol style="margin-top:12px">
     <li>Abra um documento no aplicativo online desejado</li>
@@ -200,7 +202,7 @@ ol li{margin:6px 0}
     <li>O painel do Claude abrirá à direita</li>
     <li>Escolha a opção <span class="highlight">Cloud provider or gateway</span></li>
     <li>A <strong>Gateway URL</strong> deve ser a que o Claude Gateway gerou ao iniciar o proxy, basta copiar e colar</li>
-    <li>Em <strong>Token</strong>, cole sua <a href="https://zenmux.ai/invite/HIKFX4" target="_blank" style="color:#00b4d8;font-weight:600;text-decoration:underline">chave API do ZenMux</a></li>
+    <li>Em <strong>Token</strong>, cole sua <a class="external-link" href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer">chave API do ZenMux</a></li>
     <li>Selecione o modelo e comece a usar!</li>
   </ol>
 </div>
@@ -277,12 +279,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function showButtonState(btn, original, label, className, ariaLabel) {
+  function showButtonState(btn, idleHtml, label, className, ariaLabel) {
     btn.textContent = label;
     btn.classList.add(className);
     btn.setAttribute('aria-label', ariaLabel);
-    setTimeout(() => {
-      btn.innerHTML = original;
+    return setTimeout(() => {
+      btn.innerHTML = idleHtml;
       btn.classList.remove(className);
       btn.setAttribute('aria-label', 'Copiar código');
     }, 2000);
@@ -299,17 +301,20 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.setAttribute('aria-label', 'Copiar código');
     btn.setAttribute('aria-live', 'polite');
     btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar`;
+    const idleHtml = btn.innerHTML;
+    let resetTimer;
 
     btn.addEventListener('click', async () => {
       const code = pre.querySelector('code');
       const text = code ? code.innerText : pre.innerText;
-      const original = btn.innerHTML;
+      if (resetTimer) clearTimeout(resetTimer);
+      btn.classList.remove('copied', 'error');
 
       try {
         await copyText(text.trim());
-        showButtonState(btn, original, '✓ Copiado', 'copied', 'Código copiado com sucesso');
+        resetTimer = showButtonState(btn, idleHtml, '✓ Copiado', 'copied', 'Código copiado com sucesso');
       } catch {
-        showButtonState(btn, original, 'Falhou', 'error', 'Não foi possível copiar o código');
+        resetTimer = showButtonState(btn, idleHtml, 'Falhou', 'error', 'Não foi possível copiar o código');
       }
     });
     wrapper.appendChild(btn);

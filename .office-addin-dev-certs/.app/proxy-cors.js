@@ -61,22 +61,32 @@ function loadConfig() {
   }
 }
 
-function collect(stream) {
+function collect(stream, options = {}) {
+  const { destroyOnLimit = true } = options;
+
   return new Promise((resolve, reject) => {
     const chunks = [];
     let length = 0;
+    let rejected = false;
     const MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB limit
 
     stream.on('data', c => {
+      if (rejected) return;
       length += c.length;
       if (length > MAX_PAYLOAD_SIZE) {
-        stream.destroy();
-        return reject(new Error('Payload too large (exceeds 10MB limit)'));
+        rejected = true;
+        chunks.length = 0;
+        const err = new Error('Payload too large');
+        err.code = 'PAYLOAD_TOO_LARGE';
+        err.statusCode = 413;
+        if (destroyOnLimit) stream.destroy(err);
+        else stream.pause();
+        return reject(err);
       }
       chunks.push(c);
     });
-    stream.on('end', () => resolve(Buffer.concat(chunks)));
-    stream.on('error', reject);
+    stream.on('end', () => { if (!rejected) resolve(Buffer.concat(chunks)); });
+    stream.on('error', err => { if (!rejected) reject(err); });
   });
 }
 
@@ -502,7 +512,23 @@ async function handleRequest(req, res) {
 
   // Collect body
   requestCount++;
-  const reqBody = await collect(req);
+  let reqBody;
+  try {
+    reqBody = await collect(req, { destroyOnLimit: false });
+  } catch (err) {
+    const payloadTooLarge = err && err.code === 'PAYLOAD_TOO_LARGE';
+    log(`  ERROR: request body rejected: ${err.message}`);
+    if (payloadTooLarge && typeof req.resume === 'function') req.resume();
+    res.writeHead(payloadTooLarge ? 413 : 400, {
+      'content-type': 'application/json',
+      'connection': 'close',
+      ...corsHeaders(req),
+    });
+    return res.end(JSON.stringify({ type:'error', error:{
+      type:'invalid_request_error',
+      message: payloadTooLarge ? 'Payload too large' : 'Invalid request body',
+    }}));
+  }
   let bodyStr = reqBody.toString();
   let isStreaming = false;
   let requestedModel = 'claude-sonnet-4-6';
@@ -569,7 +595,7 @@ async function handleRequest(req, res) {
         } else if (proxyRes.statusCode === 402) {
           errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou alterne para modo Gratuito.`;
         } else {
-          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${errBody.substring(0, 150)}`;
+          errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Verifique os logs do proxy para detalhes.`;
         }
         const ae = JSON.stringify({ type:'error', error:{
           type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
@@ -596,7 +622,7 @@ async function handleRequest(req, res) {
       } else if (proxyRes.statusCode === 402) {
         errMsg = `[PAGO] Sem créditos no ZenMux. Adicione saldo ou use modo Gratuito.`;
       } else {
-        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: ${respStr.substring(0, 150)}`;
+        errMsg = `[${config.mode.toUpperCase()} → ${usedModel}] Erro ${proxyRes.statusCode}: Verifique os logs do proxy para detalhes.`;
       }
       const ae = JSON.stringify({ type:'error', error:{
         type: proxyRes.statusCode === 429 ? 'rate_limit_error' : 'api_error',
@@ -616,7 +642,7 @@ async function handleRequest(req, res) {
   } catch (err) {
     log(`  ERROR: ${err.message}`);
     res.writeHead(502, { 'content-type':'application/json', ...corsHeaders(req) });
-    res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: err.message } }));
+    res.end(JSON.stringify({ type:'error', error:{ type:'api_error', message: 'Erro interno no proxy. Verifique os logs para detalhes.' } }));
   }
 }
 
