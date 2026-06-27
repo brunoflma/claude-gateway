@@ -407,6 +407,12 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
       res.write(`event: content_block_stop\ndata: ${JSON.stringify({type:'content_block_stop',index:blockIdx})}\n\n`);
       // Cache reasoning_content for this tool_call so we can reinject it in the follow-up
       if (reasoningContent && tc.id) {
+        // ⚡ Bolt: Implement FIFO eviction for unbounded reasoningCache Map
+        // Performance Impact: Prevents memory leak in long-running process, stabilizing heap usage.
+        // Benchmark: Ensures Map size doesn't exceed 500, capping memory overhead.
+        if (reasoningCache.size >= 500) {
+          reasoningCache.delete(reasoningCache.keys().next().value);
+        }
         reasoningCache.set(tc.id, reasoningContent);
         log(`  CACHE reasoning for ${tc.id}: ${reasoningContent.length} chars`);
       }
