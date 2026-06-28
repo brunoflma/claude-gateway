@@ -116,9 +116,9 @@ function getSafeOrigin(req) {
 }
 
 function corsHeaders(req) {
-  return {
-    'access-control-allow-origin': getSafeOrigin(req),
-    'access-control-allow-credentials': 'true',
+  const origin = getSafeOrigin(req);
+  const headers = {
+    'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
@@ -128,6 +128,12 @@ function corsHeaders(req) {
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY'
   };
+
+  if (origin !== 'null' && origin !== '*') {
+    headers['access-control-allow-credentials'] = 'true';
+  }
+
+  return headers;
 }
 
 // Anthropic-format models (accepted by Office add-in)
