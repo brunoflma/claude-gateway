@@ -9,3 +9,7 @@
 ## 2024-05-31 - Unbounded Map memory leak
 **Learning:** In long-running Node.js proxy servers, caching values using a `Map` without an eviction strategy acts as a memory leak that can degrade performance over time. `reasoningCache` grew indefinitely for every tool call.
 **Action:** Always implement an eviction strategy for in-memory caches. A simple FIFO mechanism (`if (cache.size > N) cache.delete(cache.keys().next().value)`) efficiently caps memory usage.
+
+## 2024-06-01 - Double UTF-8 traversal in string payloads
+**Learning:** When sending large text payloads (like JSON representations of LLM context with 100k+ tokens) in Node.js, doing `Buffer.byteLength(str)` followed by `stream.write(str)` is highly inefficient. It traverses the string twice to encode it to UTF-8—once to count bytes, and once to actually write it to the socket.
+**Action:** Pre-encode large strings using `const buf = Buffer.from(str)`. Then use `buf.length` for the headers and `stream.write(buf)` to send the data. This cuts CPU overhead for serialization by half.
