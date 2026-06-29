@@ -5,3 +5,7 @@
 ## 2024-07-25 - Copy Code Blocks Accessibility & Layout
 **Learning:** Adding dynamically injected absolutely positioned copy buttons inside horizontally scrolling code blocks (`overflow-x: auto`) can cause the button to scroll out of view or obscure text. Wrapping the `pre` block in a `relative` container and applying padding to the `pre` element ensures the button stays fixed in the top right corner relative to the block without overlapping code content.
 **Action:** When adding fixed controls to scrollable content (like code snippets), always wrap the scrollable element in a relative parent container and use padding on the inner element to preserve a safe area for the absolute control.
+
+## 2026-06-29 - Global Tab Synchronization Context
+**Learning:** When users select an OS preference (or similar environment toggle) in a multi-step tutorial, forcing them to re-select that choice in subsequent, disconnected tab groups causes unnecessary friction and breaks the illusion of a smart UI. The user's selection should act as a global context rather than a localized component state.
+**Action:** When implementing or refining tab systems in instructional materials, always bind the state globally (e.g. sync all tab groups simultaneously) to persist the user's intent across the page and reduce repetitive interactions.
