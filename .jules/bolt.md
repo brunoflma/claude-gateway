@@ -9,3 +9,7 @@
 ## 2024-05-31 - Unbounded Map memory leak
 **Learning:** In long-running Node.js proxy servers, caching values using a `Map` without an eviction strategy acts as a memory leak that can degrade performance over time. `reasoningCache` grew indefinitely for every tool call.
 **Action:** Always implement an eviction strategy for in-memory caches. A simple FIFO mechanism (`if (cache.size > N) cache.delete(cache.keys().next().value)`) efficiently caps memory usage.
+
+## 2026-06-30 - CORS Preflight (OPTIONS) Overhead
+**Learning:** Browsers issue an `OPTIONS` preflight request before `POST` requests when using custom headers (like `x-api-key`) in cross-origin settings (or local proxy settings, common for Office Add-ins). If the proxy doesn't send `Access-Control-Max-Age`, the browser does not cache the permission, resulting in two requests (OPTIONS + POST) for every single API interaction, doubling local network chatter and adding latency.
+**Action:** Always include an `access-control-max-age` header (e.g., `86400` for 24h) in CORS headers to cache the preflight response and halve the request volume.

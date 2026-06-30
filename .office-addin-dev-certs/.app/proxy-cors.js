@@ -123,6 +123,9 @@ function corsHeaders(req) {
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
     'access-control-allow-private-network': 'true',
+    // ⚡ Bolt: Cache CORS preflight (OPTIONS) requests for 24 hours
+    // Performance Impact: Eliminates redundant OPTIONS requests before every POST API call, halving local network chatter and improving latency.
+    'access-control-max-age': '86400',
     // Security headers
     'strict-transport-security': 'max-age=31536000; includeSubDomains',
     'x-content-type-options': 'nosniff',
