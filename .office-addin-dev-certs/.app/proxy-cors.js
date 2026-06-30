@@ -116,9 +116,9 @@ function getSafeOrigin(req) {
 }
 
 function corsHeaders(req) {
-  return {
-    'access-control-allow-origin': getSafeOrigin(req),
-    'access-control-allow-credentials': 'true',
+  const safeOrigin = getSafeOrigin(req);
+  const headers = {
+    'access-control-allow-origin': safeOrigin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
@@ -128,6 +128,13 @@ function corsHeaders(req) {
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY'
   };
+
+  // 🛡️ Sentinel: Omit allow-credentials for wildcard/null origins to prevent cross-origin leaks
+  if (safeOrigin !== 'null' && safeOrigin !== '*') {
+    headers['access-control-allow-credentials'] = 'true';
+  }
+
+  return headers;
 }
 
 // Anthropic-format models (accepted by Office add-in)
