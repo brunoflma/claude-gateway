@@ -322,15 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchOS(os, el) {
-  const tabs = el.parentElement.querySelectorAll('.os-tab');
-  tabs.forEach(t => {
-    t.classList.remove('active');
-    t.setAttribute('aria-selected', 'false');
+  document.querySelectorAll('.os-tab').forEach(t => {
+    const isCurrentOS = t.getAttribute('aria-controls').includes(os);
+    t.classList.toggle('active', isCurrentOS);
+    t.setAttribute('aria-selected', isCurrentOS ? 'true' : 'false');
   });
-  el.classList.add('active');
-  el.setAttribute('aria-selected', 'true');
-  const section = el.closest('.section');
-  section.querySelectorAll('.os-content').forEach(c => {
+  document.querySelectorAll('.os-content').forEach(c => {
     c.classList.toggle('active', c.id.includes(os));
   });
 }
