@@ -89,8 +89,8 @@ ol li{margin:6px 0}
     <li>Extraia na pasta do seu sistema:</li>
   </ol>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win')">🪟 Windows</button>
+    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" onclick="switchOS('mac')">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-1" role="tabpanel">
     <pre><code>C:\Users\SEU_USUARIO\.office-addin-dev-certs\</code></pre>
@@ -119,8 +119,8 @@ ol li{margin:6px 0}
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
   <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win')">🪟 Windows</button>
+    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" onclick="switchOS('mac')">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-2" role="tabpanel">
     <ol>
@@ -170,8 +170,8 @@ ol li{margin:6px 0}
 <div class="section">
   <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win')">🪟 Windows</button>
+    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" onclick="switchOS('mac')">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-4" role="tabpanel">
     <ol>
@@ -234,8 +234,8 @@ ol li{margin:6px 0}
   <p>Repita o <strong>Passo 2</strong> — instale o certificado como confiável.</p>
   <h3>Logs de diagnóstico</h3>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win')">🪟 Windows</button>
+    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" onclick="switchOS('mac')">🍎 macOS</button>
   </div>
   <div class="os-content active" id="os-win-t" role="tabpanel">
     <pre><code>Get-Content "$env:USERPROFILE\.office-addin-dev-certs\.app\logs\proxy.log" -Tail 30</code></pre>
@@ -252,6 +252,16 @@ ol li{margin:6px 0}
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore preferred OS
+  try {
+    const preferredOS = localStorage.getItem('preferredOS');
+    if (preferredOS === 'win' || preferredOS === 'mac') {
+      switchOS(preferredOS);
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
   async function copyText(text) {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
       try {
@@ -321,18 +331,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function switchOS(os, el) {
-  const tabs = el.parentElement.querySelectorAll('.os-tab');
-  tabs.forEach(t => {
-    t.classList.remove('active');
-    t.setAttribute('aria-selected', 'false');
+function switchOS(os) {
+  // Update all tab buttons globally
+  document.querySelectorAll('.os-tab').forEach(tab => {
+    const isTargetOS = tab.textContent.toLowerCase().includes(os === 'win' ? 'windows' : 'mac');
+    tab.classList.toggle('active', isTargetOS);
+    tab.setAttribute('aria-selected', isTargetOS ? 'true' : 'false');
   });
-  el.classList.add('active');
-  el.setAttribute('aria-selected', 'true');
-  const section = el.closest('.section');
-  section.querySelectorAll('.os-content').forEach(c => {
-    c.classList.toggle('active', c.id.includes(os));
+
+  // Update all tab panels globally
+  document.querySelectorAll('.os-content').forEach(content => {
+    content.classList.toggle('active', content.id.includes(os));
   });
+
+  // Persist preference
+  try {
+    localStorage.setItem('preferredOS', os);
+  } catch (e) {
+    // Ignore localStorage errors
+  }
 }
 </script>
 </body>
