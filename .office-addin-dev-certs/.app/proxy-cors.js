@@ -116,9 +116,9 @@ function getSafeOrigin(req) {
 }
 
 function corsHeaders(req) {
-  return {
-    'access-control-allow-origin': getSafeOrigin(req),
-    'access-control-allow-credentials': 'true',
+  const origin = getSafeOrigin(req);
+  const headers = {
+    'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
@@ -128,6 +128,11 @@ function corsHeaders(req) {
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY'
   };
+  // 🛡️ Sentinel: Omit allow-credentials for null/wildcard origins to prevent cross-origin vulnerabilities
+  if (origin !== 'null' && origin !== '*') {
+    headers['access-control-allow-credentials'] = 'true';
+  }
+  return headers;
 }
 
 // Anthropic-format models (accepted by Office add-in)
@@ -646,7 +651,16 @@ async function handleRequest(req, res) {
   }
 }
 
-https.createServer(sslOpts, handleRequest).listen(PORT, () => {
+https.createServer(sslOpts, (req, res) => {
+  // 🛡️ Sentinel: Catch unhandled promise rejections to prevent DoS crashes on Node v22+
+  handleRequest(req, res).catch(err => {
+    log(`  UNHANDLED PROMISE REJECTION: ${err.message}`);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'content-type': 'application/json', ...corsHeaders(req) });
+      res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'Internal Server Error' } }));
+    }
+  });
+}).listen(PORT, () => {
   const cfg = loadConfig();
   log(`Proxy v1.0 | port:${PORT} | mode:${cfg.mode}`);
   log(`Free models: ${(cfg.free_models||[]).join(', ')}`);
