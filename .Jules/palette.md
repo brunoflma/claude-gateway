@@ -5,3 +5,6 @@
 ## 2024-07-25 - Copy Code Blocks Accessibility & Layout
 **Learning:** Adding dynamically injected absolutely positioned copy buttons inside horizontally scrolling code blocks (`overflow-x: auto`) can cause the button to scroll out of view or obscure text. Wrapping the `pre` block in a `relative` container and applying padding to the `pre` element ensures the button stays fixed in the top right corner relative to the block without overlapping code content.
 **Action:** When adding fixed controls to scrollable content (like code snippets), always wrap the scrollable element in a relative parent container and use padding on the inner element to preserve a safe area for the absolute control.
+## 2026-07-02 - Dynamic SVG Icons in Copy Buttons
+**Learning:** Swapping plain text for HTML containing inline SVGs prevents unexpected layout shifts when button state changes, keeping interactive elements visually stable.
+**Action:** Always favor structured icons with `aria-hidden="true"` over plain text approximations when modifying button states to ensure consistent layout and reduce redundant screen-reader announcements.
