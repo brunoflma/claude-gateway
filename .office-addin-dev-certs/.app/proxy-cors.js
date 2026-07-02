@@ -99,39 +99,60 @@ const ALLOWED_DOMAINS = [
   'office.com'
 ];
 
+// ⚡ Bolt: Cache parsed origins to prevent repetitive URL parsing
+// Performance Impact: Eliminates redundant new URL() operations on every request
+const originCache = new Map();
+
 function getSafeOrigin(req) {
   const origin = req.headers['origin'];
   if (!origin) return '*';
+  if (origin === 'null') return 'null'; // Local file:// execution / Desktop Add-in
+
+  if (originCache.has(origin)) {
+    return originCache.get(origin);
+  }
+
   try {
-    if (origin === 'null') return 'null'; // Local file:// execution / Desktop Add-in
     const url = new URL(origin);
     const hostname = url.hostname;
     const isAllowed = ALLOWED_DOMAINS.some(domain =>
       hostname === domain || hostname.endsWith('.' + domain)
     );
-    return isAllowed ? origin : 'https://localhost:8443';
+    const safeOrigin = isAllowed ? origin : 'https://localhost:8443';
+
+    if (originCache.size > 1000) {
+      originCache.delete(originCache.keys().next().value);
+    }
+    originCache.set(origin, safeOrigin);
+    return safeOrigin;
   } catch (e) {
     return 'https://localhost:8443';
   }
 }
 
 function corsHeaders(req) {
-  const origin = getSafeOrigin(req);
+  const safeOrigin = getSafeOrigin(req);
+
+  // ⚡ Bolt: Cache preflight requests for 24 hours
+  // Performance Impact: Reduces browser-to-proxy network roundtrips by half
   const headers = {
-    'access-control-allow-origin': origin,
+    'access-control-allow-origin': safeOrigin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': '*',
     'access-control-expose-headers': 'x-request-id, request-id',
     'access-control-allow-private-network': 'true',
+    'access-control-max-age': '86400',
     // Security headers
     'strict-transport-security': 'max-age=31536000; includeSubDomains',
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY'
   };
+
   // 🛡️ Sentinel: Omit allow-credentials for null/wildcard origins to prevent cross-origin vulnerabilities
-  if (origin !== 'null' && origin !== '*') {
+  if (safeOrigin !== 'null' && safeOrigin !== '*') {
     headers['access-control-allow-credentials'] = 'true';
   }
+
   return headers;
 }
 
