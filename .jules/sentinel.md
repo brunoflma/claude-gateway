@@ -8,3 +8,7 @@
 **Vulnerability:** The local proxy dynamically reflected any `Origin` header while setting `Access-Control-Allow-Credentials` to `true`. This could allow a malicious website visited by the user to make authenticated requests to the proxy on `localhost:8443` or exfiltrate responses.
 **Learning:** Even though the proxy runs locally on the user's machine, browsers can still make cross-origin requests to `localhost`. Reflecting any origin circumvents CORS protections entirely.
 **Prevention:** Hardcode an explicit whitelist of allowed origins (e.g., Office domains and localhost). Validate incoming `Origin` headers against the whitelist before returning them in `Access-Control-Allow-Origin`. For local desktop clients with a `null` origin, `null` is safe to permit, but fallback to a safe default like `https://localhost:8443` for unauthorized domains.
+## 2024-07-02 - CORS Credential Leak on Null Origins
+**Vulnerability:** The proxy was indiscriminately setting `Access-Control-Allow-Credentials: true` even when the request origin was `null` (such as local file executions or sandboxed iframes).
+**Learning:** Returning credentials dynamically with wildcard or null origins opens up the application to cross-origin sandboxed iframe attacks, violating secure default configurations.
+**Prevention:** Dynamically verify that the requested origin is neither `null` nor `*` before including the `Access-Control-Allow-Credentials` header in the CORS response.
