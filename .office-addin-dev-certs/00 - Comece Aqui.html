@@ -322,15 +322,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchOS(os, el) {
-  const tabs = el.parentElement.querySelectorAll('.os-tab');
-  tabs.forEach(t => {
-    t.classList.remove('active');
-    t.setAttribute('aria-selected', 'false');
+  // Update all sections across the whole document
+  document.querySelectorAll('.os-tabs').forEach(tablist => {
+    const tabs = tablist.querySelectorAll('.os-tab');
+    tabs.forEach(t => {
+      // If the tab is for the selected OS, activate it, otherwise deactivate
+      const isSelectedOS = t.getAttribute('aria-controls').includes(os);
+      if (isSelectedOS) {
+        t.classList.add('active');
+        t.setAttribute('aria-selected', 'true');
+      } else {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      }
+    });
   });
-  el.classList.add('active');
-  el.setAttribute('aria-selected', 'true');
-  const section = el.closest('.section');
-  section.querySelectorAll('.os-content').forEach(c => {
+
+  document.querySelectorAll('.os-content').forEach(c => {
     c.classList.toggle('active', c.id.includes(os));
   });
 }

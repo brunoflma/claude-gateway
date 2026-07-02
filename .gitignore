@@ -12,3 +12,4 @@ Thumbs.db
 release.py
 release-gui.vbs
 release-last.log
+.office-addin-dev-certs/.app/logs/
