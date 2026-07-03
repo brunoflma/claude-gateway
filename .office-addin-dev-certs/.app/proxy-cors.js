@@ -112,22 +112,25 @@ function getSafeOrigin(req) {
     return originCache.get(origin);
   }
 
+  let safeOrigin = 'https://localhost:8443';
   try {
     const url = new URL(origin);
     const hostname = url.hostname;
     const isAllowed = ALLOWED_DOMAINS.some(domain =>
       hostname === domain || hostname.endsWith('.' + domain)
     );
-    const safeOrigin = isAllowed ? origin : 'https://localhost:8443';
-
-    if (originCache.size > 1000) {
-      originCache.delete(originCache.keys().next().value);
+    if (isAllowed) {
+      safeOrigin = origin;
     }
-    originCache.set(origin, safeOrigin);
-    return safeOrigin;
   } catch (e) {
-    return 'https://localhost:8443';
+    // 🛡️ Sentinel: Proceed to cache the default safe origin on error to prevent cache bypass DoS
   }
+
+  if (originCache.size > 1000) {
+    originCache.delete(originCache.keys().next().value);
+  }
+  originCache.set(origin, safeOrigin);
+  return safeOrigin;
 }
 
 function corsHeaders(req) {
