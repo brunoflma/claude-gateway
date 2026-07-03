@@ -13,3 +13,7 @@
 ## 2026-07-02 - Dynamic SVG Icons in Copy Buttons
 **Learning:** Swapping plain text for HTML containing inline SVGs prevents unexpected layout shifts when button state changes, keeping interactive elements visually stable.
 **Action:** Always favor structured icons with `aria-hidden="true"` over plain text approximations when modifying button states to ensure consistent layout and reduce redundant screen-reader announcements.
+
+## 2026-10-27 - Keyboard Accessibility for Scrollable Code Blocks
+**Learning:** Found that `<pre>` blocks with `overflow-x: auto` are inherently scrollable but not focusable. This prevents keyboard-only users from accessing hidden content, which is a WCAG 2.1.1 violation.
+**Action:** Always ensure scrollable regions without inherently focusable elements are given `tabindex="0"`, a relevant ARIA role (e.g. `region`), and an accessible name (`aria-label`) so they are navigable and properly announced by screen readers. Additionally, provide a `:focus-visible` outline for visual feedback.
