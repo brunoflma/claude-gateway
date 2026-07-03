@@ -17,3 +17,7 @@
 ## 2024-06-01 - Double UTF-8 traversal in string payloads
 **Learning:** When sending large text payloads (like JSON representations of LLM context with 100k+ tokens) in Node.js, doing `Buffer.byteLength(str)` followed by `stream.write(str)` is highly inefficient. It traverses the string twice to encode it to UTF-8—once to count bytes, and once to actually write it to the socket.
 **Action:** Pre-encode large strings using `const buf = Buffer.from(str)`. Then use `buf.length` for the headers and `stream.write(buf)` to send the data. This cuts CPU overhead for serialization by half.
+
+## 2026-07-03 - String allocation churn in SSE stream parsing
+**Learning:** In a high-throughput proxy server parsing Server-Sent Events (SSE) data streams (like LLM outputs), using `buffer.split('\n')` on incoming chunks creates massive, unnecessary array allocations and string garbage collection (GC) churn. Every incoming chunk triggers a full split of the buffer, generating potentially hundreds of small strings that are immediately discarded.
+**Action:** Always use zero-allocation string parsing techniques for hot-path streams. A `while ((newlineIdx = buffer.indexOf('\n')) !== -1)` loop allows slicing off exactly one line at a time, preventing intermediate array creation and drastically reducing CPU overhead and memory pressure during sustained streaming.

@@ -472,9 +472,13 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
 
   proxyRes.on('data', chunk => {
     buffer += chunk.toString();
-    const lines = buffer.split('\n');
-    buffer = lines.pop();
-    for (const line of lines) {
+    // ⚡ Bolt: Zero-allocation string parsing using indexOf instead of buffer.split('\n')
+    // Performance Impact: Eliminates massive array allocations and string GC churn during high-throughput LLM streaming
+    let newlineIdx;
+    while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+      const line = buffer.slice(0, newlineIdx);
+      buffer = buffer.slice(newlineIdx + 1);
+
       if (!line.startsWith('data: ')) continue;
       const d = line.substring(6).trim();
       if (d === '[DONE]') { finish(); return; }
