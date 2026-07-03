@@ -13,3 +13,9 @@ release.py
 release-gui.vbs
 release-last.log
 .office-addin-dev-certs/.app/logs/
+
+# Local agent/development state
+.claude/
+.conversation-esaa/
+.grok/
+.worktrees/
