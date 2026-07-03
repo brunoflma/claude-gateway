@@ -20,6 +20,7 @@ header p{color:#7f8fa6;font-size:1rem;margin-bottom:14px}
 .section h3{color:#00b4d8;font-size:1rem;margin:20px 0 8px}
 code{background:#0d1117;padding:2px 8px;border-radius:6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.85rem;color:#00b4d8;border:1px solid #1e293b}
 pre{background:#0d1117;padding:16px;border-radius:10px;overflow-x:auto;border:1px solid #1e293b;margin:12px 0}
+pre:focus-visible{outline:2px solid #00b4d8;outline-offset:2px}
 pre code{background:none;border:none;padding:0;color:#c8d6e5}
 .highlight{color:#00b4d8;font-weight:600}
 .external-link{color:#00b4d8;font-weight:600;text-decoration:underline}
@@ -291,6 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll('pre').forEach(pre => {
+    pre.setAttribute('tabindex', '0');
+    pre.setAttribute('role', 'region');
+    pre.setAttribute('aria-label', 'Código fonte');
+
     const wrapper = document.createElement('div');
     wrapper.className = 'code-wrapper';
     pre.parentNode.insertBefore(wrapper, pre);
