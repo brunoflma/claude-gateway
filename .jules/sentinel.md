@@ -13,3 +13,8 @@
 **Vulnerability:** First, `Access-Control-Allow-Credentials: true` was sent for `Origin: null` and `Origin: *`, allowing potential cross-origin vulnerabilities via sandboxed iframes. Second, the async `handleRequest` function in Node.js v22+ could throw unhandled promise rejections on network stream failures, crashing the server.
 **Learning:** Sandboxed iframes (often used to isolate untrusted content) have an origin of `null`. Allowing credentials for `null` origins is a security risk. In modern Node.js, unhandled promise rejections cause the process to exit, creating an easy DoS vector if robust error boundaries aren't in place around stream or network request handlers.
 **Prevention:** Dynamically omit `Access-Control-Allow-Credentials: true` if the origin is `null` or `*`. Ensure all async entry points in network listeners are wrapped in `.catch()` blocks with a graceful failure strategy.
+
+## 2026-07-03 - Prevent Cache Bypass DoS in Origin Validation
+**Vulnerability:** The CORS origin cache failed to cache invalid origins that threw exceptions during parsing (`new URL(origin)`). This allowed an attacker to bypass the cache by sending a flood of requests with malformed `Origin` headers, leading to repeated exceptions and high CPU usage (Denial of Service).
+**Learning:** Performance optimizations like caching must handle negative outcomes (errors/invalid inputs) just as robustly as positive outcomes. If invalid inputs aren't cached, the cache can become a DoS vector.
+**Prevention:** Ensure "negative caching" is implemented. When catching exceptions for malformed inputs in performance-critical paths, always cache the resulting fallback or failure state to prevent repeated expensive operations.
