@@ -21,3 +21,7 @@
 ## 2024-08-01 - External Links Predictability & Accessibility
 **Learning:** External links (`target="_blank"`) that open in a new tab without warning can disorient screen reader users and cause unpredictable navigation for sighted users. Providing only visual cues (like an SVG) is insufficient for screen readers, and providing only `aria-label` overrides the text content, making it hard to translate or read partially.
 **Action:** Always provide explicit, predictable navigation warnings for external links. For sighted users, append a standardized inline SVG (with `aria-hidden="true"`). For screen reader users, append a visually hidden text element (e.g., `<span class="sr-only"> (opens in a new tab)</span>`) to the link content, rather than overriding the whole label.
+
+## 2024-10-28 - ARIA Tablist Keyboard Navigation & Dynamic Tabindex
+**Learning:** For components structured as ARIA tablists (`role="tablist"`), simply adding `tabindex="0"` to active elements is not enough. Keyboard users expect arrow key navigation (`ArrowRight` and `ArrowLeft`) to cycle focus and activation between the tabs seamlessly, rather than tabbing through them.
+**Action:** Always implement explicit `keydown` event listeners for ARIA tablists to handle arrow key navigation, focus shifting, and state toggling. Ensure inactive tabs are explicitly removed from the sequential tab order via `tabindex="-1"` and only the active tab retains `tabindex="0"`.
