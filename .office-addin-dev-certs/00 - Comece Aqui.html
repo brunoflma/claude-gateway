@@ -49,7 +49,9 @@ ol li{margin:6px 0}
 .os-tab{padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;border:1px solid #1e293b;background:#0d1117;color:#7f8fa6;transition:all .2s}
 .os-tab.active,.os-tab:hover{background:linear-gradient(135deg,#00b4d8,#023e8a);color:#fff;border-color:transparent}
 .os-tab:focus-visible{outline:2px solid #00b4d8;outline-offset:2px}
-.os-content{display:none}.os-content.active{display:block}
+@keyframes fadeInSlideUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.os-content{display:none}.os-content.active{display:block;animation:fadeInSlideUp 0.2s ease-out forwards}
+@media (prefers-reduced-motion: reduce) { .os-content.active { animation: none; } }
 .code-wrapper{position:relative;margin:12px 0}
 .code-wrapper pre{margin:0;padding-right:85px}
 .copy-btn{position:absolute;top:8px;right:8px;background:#1e293b;color:#c8d6e5;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .2s;opacity:.8;display:flex;align-items:center;gap:4px}
@@ -91,13 +93,13 @@ ol li{margin:6px 0}
     <li>Extraia na pasta do seu sistema:</li>
   </ol>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button id="tab-win-1" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button id="tab-mac-1" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
-  <div class="os-content active" id="os-win-1" role="tabpanel">
+  <div class="os-content active" id="os-win-1" role="tabpanel" aria-labelledby="tab-win-1" tabindex="0">
     <pre><code>C:\Users\SEU_USUARIO\.office-addin-dev-certs\</code></pre>
   </div>
-  <div class="os-content" id="os-mac-1" role="tabpanel">
+  <div class="os-content" id="os-mac-1" role="tabpanel" aria-labelledby="tab-mac-1" tabindex="0">
     <pre><code>~/.office-addin-dev-certs/</code></pre>
   </div>
   <h3>Estrutura esperada</h3>
@@ -121,10 +123,10 @@ ol li{margin:6px 0}
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
   <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button id="tab-win-2" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button id="tab-mac-2" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
-  <div class="os-content active" id="os-win-2" role="tabpanel">
+  <div class="os-content active" id="os-win-2" role="tabpanel" aria-labelledby="tab-win-2" tabindex="0">
     <ol>
       <li>Dê duplo-clique no arquivo <code>localhost.crt</code> (na raiz da pasta)</li>
       <li>Clique em <span class="highlight">Instalar Certificado…</span></li>
@@ -134,7 +136,7 @@ ol li{margin:6px 0}
       <li>Confirme com <code>OK → Concluir</code></li>
     </ol>
   </div>
-  <div class="os-content" id="os-mac-2" role="tabpanel">
+  <div class="os-content" id="os-mac-2" role="tabpanel" aria-labelledby="tab-mac-2" tabindex="0">
     <ol>
       <li>Dê duplo-clique no arquivo <code>localhost.crt</code></li>
       <li>O <strong>Acesso às Chaves</strong> (Keychain Access) abrirá</li>
@@ -172,10 +174,10 @@ ol li{margin:6px 0}
 <div class="section">
   <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button id="tab-win-4" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button id="tab-mac-4" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
-  <div class="os-content active" id="os-win-4" role="tabpanel">
+  <div class="os-content active" id="os-win-4" role="tabpanel" aria-labelledby="tab-win-4" tabindex="0">
     <ol>
       <li>Dê duplo-clique no <code>Claude Gateway.vbs</code></li>
       <li>A interface gráfica abrirá com o painel de controle</li>
@@ -183,7 +185,7 @@ ol li{margin:6px 0}
       <li>O indicador mudará para <span style="color:#22c55e;font-weight:600">● ATIVO</span></li>
     </ol>
   </div>
-  <div class="os-content" id="os-mac-4" role="tabpanel">
+  <div class="os-content" id="os-mac-4" role="tabpanel" aria-labelledby="tab-mac-4" tabindex="0">
     <ol>
       <li>Abra o <strong>Terminal</strong></li>
       <li>Execute o comando:
@@ -236,13 +238,13 @@ ol li{margin:6px 0}
   <p>Repita o <strong>Passo 2</strong> — instale o certificado como confiável.</p>
   <h3>Logs de diagnóstico</h3>
   <div class="os-tabs" role="tablist">
-    <button class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" onclick="switchOS('mac',this)">🍎 macOS</button>
+    <button id="tab-win-t" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win',this)">🪟 Windows</button>
+    <button id="tab-mac-t" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
   </div>
-  <div class="os-content active" id="os-win-t" role="tabpanel">
+  <div class="os-content active" id="os-win-t" role="tabpanel" aria-labelledby="tab-win-t" tabindex="0">
     <pre><code>Get-Content "$env:USERPROFILE\.office-addin-dev-certs\.app\logs\proxy.log" -Tail 30</code></pre>
   </div>
-  <div class="os-content" id="os-mac-t" role="tabpanel">
+  <div class="os-content" id="os-mac-t" role="tabpanel" aria-labelledby="tab-mac-t" tabindex="0">
     <pre><code>tail -30 ~/.office-addin-dev-certs/.app/logs/proxy.log</code></pre>
   </div>
 </div>
@@ -291,6 +293,29 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.setAttribute('aria-label', 'Copiar código');
     }, 2000);
   }
+
+  document.querySelectorAll('.os-tabs').forEach(tablist => {
+    tablist.addEventListener('keydown', (e) => {
+      const tabs = Array.from(tablist.querySelectorAll('.os-tab'));
+      const activeIdx = tabs.findIndex(t => t.classList.contains('active'));
+      let nextIdx = activeIdx;
+
+      if (e.key === 'ArrowRight') {
+        nextIdx = (activeIdx + 1) % tabs.length;
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        nextIdx = (activeIdx - 1 + tabs.length) % tabs.length;
+        e.preventDefault();
+      }
+
+      if (nextIdx !== activeIdx) {
+        const nextTab = tabs[nextIdx];
+        const os = nextTab.getAttribute('aria-controls').includes('win') ? 'win' : 'mac';
+        switchOS(os, nextTab);
+        nextTab.focus();
+      }
+    });
+  });
 
   document.querySelectorAll('.external-link').forEach(link => {
     if (link.getAttribute('target') === '_blank') {
@@ -351,9 +376,11 @@ function switchOS(os, el) {
       if (isSelectedOS) {
         t.classList.add('active');
         t.setAttribute('aria-selected', 'true');
+        t.setAttribute('tabindex', '0');
       } else {
         t.classList.remove('active');
         t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
       }
     });
   });
