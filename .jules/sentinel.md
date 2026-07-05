@@ -23,3 +23,8 @@
 **Vulnerability:** The proxy decompresses upstream HTTP responses (`gzip` and `brotli`) without any constraints on the output size. A highly compressed payload (e.g., a "zip bomb") could result in gigabytes of decompressed data, causing an Out-Of-Memory (OOM) crash and Denial of Service.
 **Learning:** Node.js `zlib` asynchronous decompression functions (`zlib.gunzip`, `zlib.brotliDecompress`) do not enforce size limits by default. If decompression bounds are not specified, processing payloads from untrusted or compromised upstreams can exhaust memory.
 **Prevention:** Always use the `maxOutputLength` option when calling `zlib` decompression methods, ensuring that decompressed payloads do not exceed a safe maximum size (e.g., 10MB) for the given application context.
+
+## 2026-07-05 - Upstream Connection Exhaustion (DoS)
+**Vulnerability:** The proxy established HTTP/HTTPS connections to upstream models using `https.request` but did not configure explicit timeouts. If the upstream server became unresponsive, the connections would hang indefinitely, leading to resource exhaustion (e.g., file descriptors, sockets) and a Denial of Service.
+**Learning:** Node.js native `http`/`https` clients do not have default timeouts for the overall request lifecycle. Relying on TCP keep-alive or socket idle limits is insufficient for robust application-level protection against unresponsive backends.
+**Prevention:** Always attach an explicit timeout (e.g., `pr.setTimeout(60000, ...)` with a custom error destruction fallback) when making outbound requests using Node.js standard libraries.

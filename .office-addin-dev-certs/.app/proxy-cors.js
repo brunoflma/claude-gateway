@@ -323,6 +323,10 @@ function openaiToAnthropic(data, requestedModel) {
 function makeUpstreamRequest(url, bodyBuf, headers, method) {
   return new Promise((resolve, reject) => {
     const pr = https.request(url, { method, headers, rejectUnauthorized: true, agent: keepAliveAgent }, resolve);
+    // 🛡️ Sentinel: Add timeout to upstream requests to prevent connection exhaustion (DoS)
+    pr.setTimeout(60000, () => {
+      pr.destroy(new Error('Upstream request timeout after 60s'));
+    });
     pr.on('error', reject);
     pr.write(bodyBuf);
     pr.end();
