@@ -651,8 +651,9 @@ async function handleRequest(req, res) {
     // BUFFERED
     let respBody = await collect(proxyRes);
     const enc = (proxyRes.headers['content-encoding'] || '').toLowerCase();
-    if (enc === 'gzip') respBody = await new Promise((r, j) => zlib.gunzip(respBody, (e, b) => e ? j(e) : r(b)));
-    else if (enc === 'br') respBody = await new Promise((r, j) => zlib.brotliDecompress(respBody, (e, b) => e ? j(e) : r(b)));
+    // 🛡️ Sentinel: Add maxOutputLength to prevent Zip Bomb DoS from highly compressed payloads
+    if (enc === 'gzip') respBody = await new Promise((r, j) => zlib.gunzip(respBody, { maxOutputLength: 10 * 1024 * 1024 }, (e, b) => e ? j(e) : r(b)));
+    else if (enc === 'br') respBody = await new Promise((r, j) => zlib.brotliDecompress(respBody, { maxOutputLength: 10 * 1024 * 1024 }, (e, b) => e ? j(e) : r(b)));
     let respStr = respBody.toString();
 
     if (proxyRes.statusCode >= 400) {
