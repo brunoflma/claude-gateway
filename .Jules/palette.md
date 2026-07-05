@@ -17,3 +17,7 @@
 ## 2026-10-27 - Keyboard Accessibility for Scrollable Code Blocks
 **Learning:** Found that `<pre>` blocks with `overflow-x: auto` are inherently scrollable but not focusable. This prevents keyboard-only users from accessing hidden content, which is a WCAG 2.1.1 violation.
 **Action:** Always ensure scrollable regions without inherently focusable elements are given `tabindex="0"`, a relevant ARIA role (e.g. `region`), and an accessible name (`aria-label`) so they are navigable and properly announced by screen readers. Additionally, provide a `:focus-visible` outline for visual feedback.
+
+## 2024-08-01 - External Links Predictability & Accessibility
+**Learning:** External links (`target="_blank"`) that open in a new tab without warning can disorient screen reader users and cause unpredictable navigation for sighted users. Providing only visual cues (like an SVG) is insufficient for screen readers, and providing only `aria-label` overrides the text content, making it hard to translate or read partially.
+**Action:** Always provide explicit, predictable navigation warnings for external links. For sighted users, append a standardized inline SVG (with `aria-hidden="true"`). For screen reader users, append a visually hidden text element (e.g., `<span class="sr-only"> (opens in a new tab)</span>`) to the link content, rather than overriding the whole label.
