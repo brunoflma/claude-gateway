@@ -365,6 +365,8 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
         'host': TARGET_HOST,
         'content-length': bodyBuf.length,
       };
+      // ⚡ Bolt: Request compressed responses for buffered calls to drastically reduce network transfer times
+      if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
       const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method);
       
       if (proxyRes.statusCode === 429 && retry < 2) {
@@ -394,6 +396,7 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
+  if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
   const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, 'POST');
   return { proxyRes, bodyStr, usedModel: lastModel, idx: models.length - 1, needsConversion: true };
 }
@@ -414,6 +417,7 @@ async function routePaid(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
+  if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
   const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method);
   return { proxyRes, bodyStr, usedModel: zenmuxModel, idx: 0, needsConversion: true };
 }
@@ -607,10 +611,12 @@ async function handleRequest(req, res) {
         : await tryFreeModels(anthropicBody, apiKey, method, config);
     } else {
       const m = (config.free_models || ['deepseek/deepseek-v4-pro-free'])[0];
-      const fwdStr = JSON.stringify({ model: m, ...JSON.parse(bodyStr || '{}') });
+      const parsedBody = JSON.parse(bodyStr || '{}');
+      const fwdStr = JSON.stringify({ model: m, ...parsedBody });
       const fwdBuf = Buffer.from(fwdStr);
       const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
       const hdrs = { 'content-type':'application/json', 'authorization':`Bearer ${apiKey}`, 'host':TARGET_HOST, 'content-length':fwdBuf.length };
+      if (!parsedBody.stream) hdrs['accept-encoding'] = 'gzip, br';
       const proxyRes = await makeUpstreamRequest(url, fwdBuf, hdrs, method);
       result = { proxyRes, bodyStr: fwdStr, usedModel: m, idx: 0, needsConversion: true };
     }
