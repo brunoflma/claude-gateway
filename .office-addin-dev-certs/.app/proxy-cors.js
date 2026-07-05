@@ -90,6 +90,18 @@ function collect(stream, options = {}) {
   });
 }
 
+function decodeUpstreamBody(buffer, headers) {
+  const enc = (headers['content-encoding'] || '').toLowerCase();
+  const limit = { maxOutputLength: 10 * 1024 * 1024 };
+  if (enc === 'gzip') {
+    return new Promise((resolve, reject) => zlib.gunzip(buffer, limit, (err, body) => err ? reject(err) : resolve(body)));
+  }
+  if (enc === 'br') {
+    return new Promise((resolve, reject) => zlib.brotliDecompress(buffer, limit, (err, body) => err ? reject(err) : resolve(body)));
+  }
+  return Promise.resolve(buffer);
+}
+
 // 🛡️ Sentinel: Restrict CORS to authorized Office/localhost origins
 const ALLOWED_DOMAINS = [
   'localhost',
@@ -370,6 +382,8 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
         'host': TARGET_HOST,
         'content-length': bodyBuf.length,
       };
+      // ⚡ Bolt: Request compressed responses for buffered calls to drastically reduce network transfer times
+      if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
       const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method, config.upstream_timeout_ms || 120000);
       
       if (proxyRes.statusCode === 429 && retry < 2) {
@@ -378,7 +392,7 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
         continue; // retry same model
       }
       if (proxyRes.statusCode === 400 && i < models.length - 1) {
-        const errBody = (await collect(proxyRes)).toString();
+        const errBody = (await decodeUpstreamBody(await collect(proxyRes), proxyRes.headers)).toString();
         log(`  400 → fallback to next model | ${errBody.substring(0, 150)}`);
         break; // try next model
       }
@@ -399,6 +413,7 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
+  if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
   const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, 'POST', config.upstream_timeout_ms || 120000);
   return { proxyRes, bodyStr, usedModel: lastModel, idx: models.length - 1, needsConversion: true };
 }
@@ -419,6 +434,7 @@ async function routePaid(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
+  if (!anthropicBody.stream) headers['accept-encoding'] = 'gzip, br';
   const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method, config.upstream_timeout_ms || 120000);
   return { proxyRes, bodyStr, usedModel: zenmuxModel, idx: 0, needsConversion: true };
 }
@@ -612,10 +628,12 @@ async function handleRequest(req, res) {
         : await tryFreeModels(anthropicBody, apiKey, method, config);
     } else {
       const m = (config.free_models || ['deepseek/deepseek-v4-pro-free'])[0];
-      const fwdStr = JSON.stringify({ model: m, ...JSON.parse(bodyStr || '{}') });
+      const parsedBody = JSON.parse(bodyStr || '{}');
+      const fwdStr = JSON.stringify({ model: m, ...parsedBody });
       const fwdBuf = Buffer.from(fwdStr);
       const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
       const hdrs = { 'content-type':'application/json', 'authorization':`Bearer ${apiKey}`, 'host':TARGET_HOST, 'content-length':fwdBuf.length };
+      if (!parsedBody.stream) hdrs['accept-encoding'] = 'gzip, br';
       const proxyRes = await makeUpstreamRequest(url, fwdBuf, hdrs, method, config.upstream_timeout_ms || 120000);
       result = { proxyRes, bodyStr: fwdStr, usedModel: m, idx: 0, needsConversion: true };
     }
@@ -633,7 +651,7 @@ async function handleRequest(req, res) {
     // STREAMING
     if (isStreaming) {
       if (proxyRes.statusCode >= 400) {
-        const errBody = (await collect(proxyRes)).toString();
+        const errBody = (await decodeUpstreamBody(await collect(proxyRes), proxyRes.headers)).toString();
         log(`  STREAM ERROR: ${errBody.substring(0, 200)}`);
         let errMsg;
         if (proxyRes.statusCode === 429) {
@@ -654,11 +672,7 @@ async function handleRequest(req, res) {
     }
 
     // BUFFERED
-    let respBody = await collect(proxyRes);
-    const enc = (proxyRes.headers['content-encoding'] || '').toLowerCase();
-    // 🛡️ Sentinel: Add maxOutputLength to prevent Zip Bomb DoS from highly compressed payloads
-    if (enc === 'gzip') respBody = await new Promise((r, j) => zlib.gunzip(respBody, { maxOutputLength: 10 * 1024 * 1024 }, (e, b) => e ? j(e) : r(b)));
-    else if (enc === 'br') respBody = await new Promise((r, j) => zlib.brotliDecompress(respBody, { maxOutputLength: 10 * 1024 * 1024 }, (e, b) => e ? j(e) : r(b)));
+    let respBody = await decodeUpstreamBody(await collect(proxyRes), proxyRes.headers);
     let respStr = respBody.toString();
 
     if (proxyRes.statusCode >= 400) {
