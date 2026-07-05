@@ -320,12 +320,13 @@ function openaiToAnthropic(data, requestedModel) {
 }
 
 // Make upstream request
-function makeUpstreamRequest(url, bodyBuf, headers, method) {
+function makeUpstreamRequest(url, bodyBuf, headers, method, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
     const pr = https.request(url, { method, headers, rejectUnauthorized: true, agent: keepAliveAgent }, resolve);
-    // 🛡️ Sentinel: Add timeout to upstream requests to prevent connection exhaustion (DoS)
-    pr.setTimeout(60000, () => {
-      pr.destroy(new Error('Upstream request timeout after 60s'));
+    // 🛡️ Sentinel: Add configurable timeout to upstream requests to prevent connection exhaustion (DoS)
+    // without cutting off valid slow responses prematurely.
+    pr.setTimeout(timeoutMs, () => {
+      pr.destroy(new Error(`Upstream request timeout after ${timeoutMs}ms`));
     });
     pr.on('error', reject);
     pr.write(bodyBuf);
@@ -369,7 +370,7 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
         'host': TARGET_HOST,
         'content-length': bodyBuf.length,
       };
-      const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method);
+      const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method, config.upstream_timeout_ms || 120000);
       
       if (proxyRes.statusCode === 429 && retry < 2) {
         await collect(proxyRes); // drain
@@ -398,7 +399,7 @@ async function tryFreeModels(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
-  const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, 'POST');
+  const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, 'POST', config.upstream_timeout_ms || 120000);
   return { proxyRes, bodyStr, usedModel: lastModel, idx: models.length - 1, needsConversion: true };
 }
 
@@ -418,7 +419,7 @@ async function routePaid(anthropicBody, apiKey, method, config) {
     'host': TARGET_HOST,
     'content-length': bodyBuf.length,
   };
-  const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method);
+  const proxyRes = await makeUpstreamRequest(url, bodyBuf, headers, method, config.upstream_timeout_ms || 120000);
   return { proxyRes, bodyStr, usedModel: zenmuxModel, idx: 0, needsConversion: true };
 }
 
@@ -615,7 +616,7 @@ async function handleRequest(req, res) {
       const fwdBuf = Buffer.from(fwdStr);
       const url = `https://${TARGET_HOST}/api/v1/chat/completions`;
       const hdrs = { 'content-type':'application/json', 'authorization':`Bearer ${apiKey}`, 'host':TARGET_HOST, 'content-length':fwdBuf.length };
-      const proxyRes = await makeUpstreamRequest(url, fwdBuf, hdrs, method);
+      const proxyRes = await makeUpstreamRequest(url, fwdBuf, hdrs, method, config.upstream_timeout_ms || 120000);
       result = { proxyRes, bodyStr: fwdStr, usedModel: m, idx: 0, needsConversion: true };
     }
 
