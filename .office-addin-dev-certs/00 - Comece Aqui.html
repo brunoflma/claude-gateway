@@ -70,8 +70,10 @@ ol li{margin:6px 0}
   <span class="badge">v1.0 — Guia de Instalação</span>
 </header>
 
+<main>
+
 <!-- REQUISITOS -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">0</span> Pré-requisitos</h2>
   <ul>
     <li>Windows 10/11 ou macOS 12+</li>
@@ -79,14 +81,14 @@ ol li{margin:6px 0}
     <li>Acesso ao <strong>Word Online</strong>, <strong>Excel Online</strong> ou <strong>PowerPoint Online</strong> para carregar o manifest</li>
     <li>Conta gratuita no <a class="external-link" href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer">ZenMux.ai</a> — copie sua API Key</li>
   </ul>
-  <div class="info">
+  <div class="info" role="status">
     O pacote já inclui Node.js e Python embutidos.<br>
     Não é necessário instalar nada além de extrair os arquivos.
   </div>
-</div>
+</section>
 
 <!-- PASSO 1 -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">1</span> Extrair o pacote</h2>
   <ol>
     <li>Baixe o arquivo <code>claude-gateway-v1.0.zip</code></li>
@@ -116,10 +118,10 @@ ol li{margin:6px 0}
     &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="d">📁 node/</span> &nbsp;← Node.js embutido<br>
     &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="d">📁 python/</span> &nbsp;← Python embutido<br>
   </div>
-</div>
+</section>
 
 <!-- PASSO 2 -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
   <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
   <div class="os-tabs" role="tablist">
@@ -147,11 +149,11 @@ ol li{margin:6px 0}
       <li>Feche e confirme com sua senha</li>
     </ol>
   </div>
-  <div class="warn">Sem esse passo, o Word/Excel/PowerPoint rejeitará a conexão HTTPS com o proxy local.</div>
-</div>
+  <div class="warn" role="alert">Sem esse passo, o Word/Excel/PowerPoint rejeitará a conexão HTTPS com o proxy local.</div>
+</section>
 
 <!-- PASSO 3 -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">3</span> Carregar o Add-in via Office Online</h2>
   <p>Acesse qualquer um dos aplicativos online da Microsoft:</p>
   <ul>
@@ -167,11 +169,11 @@ ol li{margin:6px 0}
     <li>Clique em <code>Procurar…</code> e selecione o arquivo <code>manifest.xml</code></li>
     <li>Clique em <code>Adicionar</code></li>
   </ol>
-  <div class="info">Após carregar via Office Online, o add-in ficará disponível automaticamente no Word, Excel e PowerPoint Desktop (Windows e Mac) na sua conta Microsoft.</div>
-</div>
+  <div class="info" role="status">Após carregar via Office Online, o add-in ficará disponível automaticamente no Word, Excel e PowerPoint Desktop (Windows e Mac) na sua conta Microsoft.</div>
+</section>
 
 <!-- PASSO 4 -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
   <div class="os-tabs" role="tablist">
     <button id="tab-win-4" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)">🪟 Windows</button>
@@ -194,10 +196,10 @@ ol li{margin:6px 0}
       <li>O proxy iniciará em <code>https://localhost:8443</code></li>
     </ol>
   </div>
-</div>
+</section>
 
 <!-- PASSO 5 -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">5</span> Usar o Claude no Office</h2>
   <p>O add-in funciona no <strong>Word</strong>, <strong>Excel</strong> e <strong>PowerPoint</strong>. O processo é o mesmo em todos:</p>
   <ol>
@@ -209,10 +211,10 @@ ol li{margin:6px 0}
     <li>Em <strong>Token</strong>, cole sua <a class="external-link" href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer">chave API do ZenMux</a></li>
     <li>Selecione o modelo e comece a usar!</li>
   </ol>
-</div>
+</section>
 
 <!-- MODELOS -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">6</span> Modelos e Modos de Operação</h2>
   <h3>Mapeamento (Modo Gratuito)</h3>
   <div class="model-card"><span class="from">Claude Opus 4.7</span><span class="arrow">→</span><span class="to">deepseek-v4-pro-free</span></div>
@@ -220,14 +222,22 @@ ol li{margin:6px 0}
   <div class="model-card"><span class="from">Claude Sonnet 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-flash-free</span></div>
   <h3>Modos</h3>
   <table>
-    <tr><th>Modo</th><th>Descrição</th><th>Custo</th></tr>
-    <tr><td><span class="highlight">Gratuito</span></td><td>DeepSeek/GLM via ZenMux Free</td><td>$0</td></tr>
-    <tr><td><span class="highlight">Pago</span></td><td>Claude real via ZenMux Billing</td><td>Créditos ZenMux</td></tr>
+    <thead>
+      <tr>
+        <th scope="col">Modo</th>
+        <th scope="col">Descrição</th>
+        <th scope="col">Custo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="highlight">Gratuito</span></td><td>DeepSeek/GLM via ZenMux Free</td><td>$0</td></tr>
+      <tr><td><span class="highlight">Pago</span></td><td>Claude real via ZenMux Billing</td><td>Créditos ZenMux</td></tr>
+    </tbody>
   </table>
-</div>
+</section>
 
 <!-- TROUBLESHOOTING -->
-<div class="section">
+<section class="section">
   <h2><span class="step-num">?</span> Solução de Problemas</h2>
   <h3>"Could not retrieve the model list"</h3>
   <p>O proxy não está ativo. Inicie pelo <code>Claude Gateway.vbs</code> (Windows) ou via Terminal (Mac).</p>
@@ -247,7 +257,9 @@ ol li{margin:6px 0}
   <div class="os-content" id="os-mac-t" role="tabpanel" aria-labelledby="tab-mac-t" tabindex="0">
     <pre><code>tail -30 ~/.office-addin-dev-certs/.app/logs/proxy.log</code></pre>
   </div>
-</div>
+</section>
+
+</main>
 
 <footer>
   <p>Desenvolvido por Bruno Ferreira &nbsp;|&nbsp; v1.0</p>
