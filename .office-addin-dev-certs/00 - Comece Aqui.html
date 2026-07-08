@@ -79,7 +79,7 @@ ol li{margin:6px 0}
     <li>Acesso ao <strong>Word Online</strong>, <strong>Excel Online</strong> ou <strong>PowerPoint Online</strong> para carregar o manifest</li>
     <li>Conta gratuita no <a class="external-link" href="https://zenmux.ai/invite/HIKFX4" target="_blank" rel="noopener noreferrer">ZenMux.ai</a> — copie sua API Key</li>
   </ul>
-  <div class="info">
+  <div class="info" role="status">
     O pacote já inclui Node.js e Python embutidos.<br>
     Não é necessário instalar nada além de extrair os arquivos.
   </div>
@@ -147,7 +147,7 @@ ol li{margin:6px 0}
       <li>Feche e confirme com sua senha</li>
     </ol>
   </div>
-  <div class="warn">Sem esse passo, o Word/Excel/PowerPoint rejeitará a conexão HTTPS com o proxy local.</div>
+  <div class="warn" role="alert">Sem esse passo, o Word/Excel/PowerPoint rejeitará a conexão HTTPS com o proxy local.</div>
 </div>
 
 <!-- PASSO 3 -->
@@ -167,7 +167,7 @@ ol li{margin:6px 0}
     <li>Clique em <code>Procurar…</code> e selecione o arquivo <code>manifest.xml</code></li>
     <li>Clique em <code>Adicionar</code></li>
   </ol>
-  <div class="info">Após carregar via Office Online, o add-in ficará disponível automaticamente no Word, Excel e PowerPoint Desktop (Windows e Mac) na sua conta Microsoft.</div>
+  <div class="info" role="status">Após carregar via Office Online, o add-in ficará disponível automaticamente no Word, Excel e PowerPoint Desktop (Windows e Mac) na sua conta Microsoft.</div>
 </div>
 
 <!-- PASSO 4 -->
@@ -220,9 +220,13 @@ ol li{margin:6px 0}
   <div class="model-card"><span class="from">Claude Sonnet 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-flash-free</span></div>
   <h3>Modos</h3>
   <table>
-    <tr><th>Modo</th><th>Descrição</th><th>Custo</th></tr>
-    <tr><td><span class="highlight">Gratuito</span></td><td>DeepSeek/GLM via ZenMux Free</td><td>$0</td></tr>
-    <tr><td><span class="highlight">Pago</span></td><td>Claude real via ZenMux Billing</td><td>Créditos ZenMux</td></tr>
+    <thead>
+      <tr><th scope="col">Modo</th><th scope="col">Descrição</th><th scope="col">Custo</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="highlight">Gratuito</span></td><td>DeepSeek/GLM via ZenMux Free</td><td>$0</td></tr>
+      <tr><td><span class="highlight">Pago</span></td><td>Claude real via ZenMux Billing</td><td>Créditos ZenMux</td></tr>
+    </tbody>
   </table>
 </div>
 
