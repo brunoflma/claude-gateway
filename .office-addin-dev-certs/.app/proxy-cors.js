@@ -454,7 +454,7 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
   let blockIdx = 0;
   let textBlockOpen = true;
   // Track streaming tool calls: { index -> { id, name, args } }
-  const toolCalls = {};
+  const toolCalls = Object.create(null);
 
   const finish = (reason) => {
     if (done) return;
