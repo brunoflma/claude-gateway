@@ -498,10 +498,12 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
     buffer += chunk.toString();
     // ⚡ Bolt: Zero-allocation string parsing using indexOf instead of buffer.split('\n')
     // Performance Impact: Eliminates massive array allocations and string GC churn during high-throughput LLM streaming
+    // Optimization: Track startIdx to avoid O(N^2) buffer slicing on every line
     let newlineIdx;
-    while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
-      const line = buffer.slice(0, newlineIdx);
-      buffer = buffer.slice(newlineIdx + 1);
+    let startIdx = 0;
+    while ((newlineIdx = buffer.indexOf('\n', startIdx)) !== -1) {
+      const line = buffer.substring(startIdx, newlineIdx);
+      startIdx = newlineIdx + 1;
 
       if (!line.startsWith('data: ')) continue;
       const d = line.substring(6).trim();
@@ -534,6 +536,10 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
           return;
         }
       } catch {}
+    }
+    // Update buffer once with remaining unparsed data
+    if (startIdx > 0) {
+      buffer = buffer.substring(startIdx);
     }
   });
   proxyRes.on('end', () => { finish(); res.end(); });
