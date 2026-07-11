@@ -454,7 +454,9 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
   let blockIdx = 0;
   let textBlockOpen = true;
   // Track streaming tool calls: { index -> { id, name, args } }
-  const toolCalls = {};
+  // 🛡️ Sentinel: Initialize with Object.create(null) to prevent Prototype Pollution
+  // since this object is populated dynamically using keys from external SSE data stream.
+  const toolCalls = Object.create(null);
 
   const finish = (reason) => {
     if (done) return;
