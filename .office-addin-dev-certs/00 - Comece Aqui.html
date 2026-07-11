@@ -92,9 +92,9 @@ ol li{margin:6px 0}
     <li>Baixe o arquivo <code>claude-gateway-v1.0.zip</code></li>
     <li>Extraia na pasta do seu sistema:</li>
   </ol>
-  <div class="os-tabs" role="tablist">
-    <button id="tab-win-1" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button id="tab-mac-1" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button id="tab-win-1" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-1" onclick="switchOS('win',this)"><span aria-hidden="true">🪟</span> Windows</button>
+    <button id="tab-mac-1" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-1" tabindex="-1" onclick="switchOS('mac',this)"><span aria-hidden="true">🍎</span> macOS</button>
   </div>
   <div class="os-content active" id="os-win-1" role="tabpanel" aria-labelledby="tab-win-1" tabindex="0">
     <pre><code>C:\Users\SEU_USUARIO\.office-addin-dev-certs\</code></pre>
@@ -122,9 +122,9 @@ ol li{margin:6px 0}
 <section class="section">
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
   <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
-  <div class="os-tabs" role="tablist">
-    <button id="tab-win-2" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button id="tab-mac-2" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button id="tab-win-2" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)"><span aria-hidden="true">🪟</span> Windows</button>
+    <button id="tab-mac-2" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" tabindex="-1" onclick="switchOS('mac',this)"><span aria-hidden="true">🍎</span> macOS</button>
   </div>
   <div class="os-content active" id="os-win-2" role="tabpanel" aria-labelledby="tab-win-2" tabindex="0">
     <ol>
@@ -173,9 +173,9 @@ ol li{margin:6px 0}
 <!-- PASSO 4 -->
 <section class="section">
   <h2><span class="step-num">4</span> Iniciar o Claude Gateway</h2>
-  <div class="os-tabs" role="tablist">
-    <button id="tab-win-4" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button id="tab-mac-4" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button id="tab-win-4" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-4" onclick="switchOS('win',this)"><span aria-hidden="true">🪟</span> Windows</button>
+    <button id="tab-mac-4" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-4" tabindex="-1" onclick="switchOS('mac',this)"><span aria-hidden="true">🍎</span> macOS</button>
   </div>
   <div class="os-content active" id="os-win-4" role="tabpanel" aria-labelledby="tab-win-4" tabindex="0">
     <ol>
@@ -215,9 +215,9 @@ ol li{margin:6px 0}
 <section class="section">
   <h2><span class="step-num">6</span> Modelos e Modos de Operação</h2>
   <h3>Mapeamento (Modo Gratuito)</h3>
-  <div class="model-card"><span class="from">Claude Opus 4.7</span><span class="arrow">→</span><span class="to">deepseek-v4-pro-free</span></div>
-  <div class="model-card"><span class="from">Claude Opus 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-pro-free</span></div>
-  <div class="model-card"><span class="from">Claude Sonnet 4.6</span><span class="arrow">→</span><span class="to">deepseek-v4-flash-free</span></div>
+  <div class="model-card"><span class="from">Claude Opus 4.7</span><span class="arrow" aria-hidden="true">→</span><span class="sr-only">mapeado para</span><span class="to">deepseek-v4-pro-free</span></div>
+  <div class="model-card"><span class="from">Claude Opus 4.6</span><span class="arrow" aria-hidden="true">→</span><span class="sr-only">mapeado para</span><span class="to">deepseek-v4-pro-free</span></div>
+  <div class="model-card"><span class="from">Claude Sonnet 4.6</span><span class="arrow" aria-hidden="true">→</span><span class="sr-only">mapeado para</span><span class="to">deepseek-v4-flash-free</span></div>
   <h3>Modos</h3>
   <table>
     <thead>
@@ -241,9 +241,9 @@ ol li{margin:6px 0}
   <h3>Certificado não confiável</h3>
   <p>Repita o <strong>Passo 2</strong> — instale o certificado como confiável.</p>
   <h3>Logs de diagnóstico</h3>
-  <div class="os-tabs" role="tablist">
-    <button id="tab-win-t" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win',this)">🪟 Windows</button>
-    <button id="tab-mac-t" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" tabindex="-1" onclick="switchOS('mac',this)">🍎 macOS</button>
+  <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
+    <button id="tab-win-t" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-t" onclick="switchOS('win',this)"><span aria-hidden="true">🪟</span> Windows</button>
+    <button id="tab-mac-t" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-t" tabindex="-1" onclick="switchOS('mac',this)"><span aria-hidden="true">🍎</span> macOS</button>
   </div>
   <div class="os-content active" id="os-win-t" role="tabpanel" aria-labelledby="tab-win-t" tabindex="0">
     <pre><code>Get-Content "$env:USERPROFILE\.office-addin-dev-certs\.app\logs\proxy.log" -Tail 30</code></pre>
