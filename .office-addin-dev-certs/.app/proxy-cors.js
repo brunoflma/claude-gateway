@@ -548,6 +548,18 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
 }
 
 async function handleRequest(req, res) {
+  // 🛡️ Sentinel: Enforce strict origin validation to prevent CSRF / unauthorized execution
+  // by malicious websites attempting to use the local proxy to access ZenMux models.
+  const origin = req.headers['origin'];
+  if (origin && origin !== 'null') {
+    const safeOrigin = getSafeOrigin(req);
+    if (safeOrigin !== origin) {
+      log(`  ERROR: Rejected unauthorized origin: ${origin}`);
+      res.writeHead(403, { 'content-type': 'application/json', 'connection': 'close' });
+      return res.end(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'Unauthorized origin' } }));
+    }
+  }
+
   const method = req.method.toUpperCase();
   // ⚡ Bolt: Optimize urlPath parsing to avoid unnecessary array allocations per request
   const qmarkIndex = req.url.indexOf('?');
