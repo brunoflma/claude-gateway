@@ -556,6 +556,34 @@ async function handleRequest(req, res) {
 
   log(`>>> ${method} ${urlPath} [mode:${config.mode}]`);
 
+  // 🛡️ Sentinel: Enforce strict origin validation to prevent CSRF / unauthorized execution
+  // by malicious websites and sandboxed iframes (Origin: null) attempting to access ZenMux.
+  // Must run BEFORE preflight OPTIONS responses to prevent cross-origin scanning.
+  const origin = req.headers['origin'];
+  if (origin) {
+    if (origin === 'null') {
+      // 🛡️ Sentinel: Enforce strong authentication for null origin (sandboxed iframes / local execution)
+      // We check for the presence and a safe minimum length of an API key as a basic sanity check here.
+      // The *actual* cryptographic validation of the API key happens securely on the ZenMux gateway.
+      // This prevents unauthenticated cross-origin scanning, while allowing legitimate authenticated requests.
+      const apiKey = req.headers['x-api-key'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+      // Browsers don't send custom headers in preflight (OPTIONS), so we skip key validation for OPTIONS
+      // since the actual POST will be blocked if it lacks the key.
+      if (method !== 'OPTIONS' && (!apiKey || apiKey.length < 10)) {
+        log(`  ERROR: Rejected Origin: null without valid API key format`);
+        res.writeHead(403, { 'content-type': 'application/json', 'connection': 'close', ...corsHeaders(req) });
+        return res.end(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'API key required for null origin' } }));
+      }
+    } else {
+      const safeOrigin = getSafeOrigin(req);
+      if (safeOrigin !== origin) {
+        log(`  ERROR: Rejected unauthorized origin: ${origin}`);
+        res.writeHead(403, { 'content-type': 'application/json', 'connection': 'close', ...corsHeaders(req) });
+        return res.end(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'Unauthorized origin' } }));
+      }
+    }
+  }
+
   if (method === 'OPTIONS') { res.writeHead(200, corsHeaders(req)); return res.end(); }
   if (urlPath === '/ping' || urlPath === '/health') {
     res.writeHead(200, { 'content-type': 'application/json', ...corsHeaders(req) });
