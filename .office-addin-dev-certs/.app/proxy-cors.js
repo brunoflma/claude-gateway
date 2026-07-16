@@ -56,6 +56,7 @@ function loadConfig() {
     lastConfigLoad = now;
     return cachedConfig;
   } catch (e) {
+    lastConfigLoad = now; // ⚡ Bolt: Cache failed load attempts to prevent synchronous file read DoS
     if (cachedConfig) return cachedConfig;
     return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
   }
