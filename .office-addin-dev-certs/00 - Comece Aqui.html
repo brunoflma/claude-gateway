@@ -65,7 +65,7 @@ ol li{margin:6px 0}
 <main class="container">
 
 <header>
-  <h1>⚡ Claude Gateway</h1>
+  <h1><span aria-hidden="true">⚡</span> Claude Gateway</h1>
   <p>Proxy local para o Claude for Office Add-in</p>
   <span class="badge">v1.0 — Guia de Instalação</span>
 </header>
@@ -104,17 +104,17 @@ ol li{margin:6px 0}
   </div>
   <h3>Estrutura esperada</h3>
   <div class="tree">
-    <span class="d">📁 .office-addin-dev-certs/</span><br>
-    ├── <span class="f">00 - Comece Aqui.html</span> &nbsp;← Este guia<br>
-    ├── <span class="f">Claude Gateway.vbs</span> &nbsp;← Lançador (Windows)<br>
-    ├── <span class="f">localhost.crt</span> &nbsp;← Certificado SSL<br>
-    ├── <span class="f">manifest.xml</span> &nbsp;← Manifesto do Add-in<br>
-    └── <span class="d">📁 .app/</span> &nbsp;← Pasta oculta (não modificar)<br>
+    <span class="d"><span aria-hidden="true">📁</span> .office-addin-dev-certs/</span><br>
+    ├── <span class="f">00 - Comece Aqui.html</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Este guia<br>
+    ├── <span class="f">Claude Gateway.vbs</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Lançador (Windows)<br>
+    ├── <span class="f">localhost.crt</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Certificado SSL<br>
+    ├── <span class="f">manifest.xml</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Manifesto do Add-in<br>
+    └── <span class="d"><span aria-hidden="true">📁</span> .app/</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Pasta oculta (não modificar)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">proxy-cors.js</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">gateway_gui.py</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">gateway-config.json</span><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="d">📁 node/</span> &nbsp;← Node.js embutido<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="d">📁 python/</span> &nbsp;← Python embutido<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="d"><span aria-hidden="true">📁</span> node/</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Node.js embutido<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="d"><span aria-hidden="true">📁</span> python/</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Python embutido<br>
   </div>
 </section>
 
@@ -130,10 +130,10 @@ ol li{margin:6px 0}
     <ol>
       <li>Dê duplo-clique no arquivo <code>localhost.crt</code> (na raiz da pasta)</li>
       <li>Clique em <span class="highlight">Instalar Certificado…</span></li>
-      <li>Selecione <code>Máquina Local</code> → <code>Avançar</code></li>
+      <li>Selecione <code>Máquina Local</code> <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> <code>Avançar</code></li>
       <li>Selecione <code>Colocar todos os certificados no repositório a seguir</code></li>
-      <li>Clique <code>Procurar…</code> → <code>Autoridades de Certificação Raiz Confiáveis</code></li>
-      <li>Confirme com <code>OK → Concluir</code></li>
+      <li>Clique <code>Procurar…</code> <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> <code>Autoridades de Certificação Raiz Confiáveis</code></li>
+      <li>Confirme com <code>OK <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> Concluir</code></li>
     </ol>
   </div>
   <div class="os-content" id="os-mac-2" role="tabpanel" aria-labelledby="tab-mac-2" tabindex="0">
@@ -142,7 +142,7 @@ ol li{margin:6px 0}
       <li>O <strong>Acesso às Chaves</strong> (Keychain Access) abrirá</li>
       <li>O certificado será adicionado ao chaveiro <code>login</code></li>
       <li>Localize o certificado <code>localhost</code> no chaveiro</li>
-      <li>Dê duplo-clique → expanda <span class="highlight">Confiança</span></li>
+      <li>Dê duplo-clique <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> expanda <span class="highlight">Confiança</span></li>
       <li>Em "Ao usar este certificado", selecione <code>Confiar Sempre</code></li>
       <li>Feche e confirme com sua senha</li>
     </ol>
@@ -161,8 +161,8 @@ ol li{margin:6px 0}
   </ul>
   <ol style="margin-top:12px">
     <li>Abra um documento no aplicativo online desejado</li>
-    <li>Clique em <code>Inserir</code> → <code>Suplementos</code></li>
-    <li>Na janela de Suplementos do Office, clique em <span class="highlight">Gerenciar Meu Suplemento ▾</span></li>
+    <li>Clique em <code>Inserir</code> <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> <code>Suplementos</code></li>
+    <li>Na janela de Suplementos do Office, clique em <span class="highlight">Gerenciar Meu Suplemento <span aria-hidden="true">▾</span></span></li>
     <li>Selecione <code>Carregar Meu Suplemento</code></li>
     <li>Clique em <code>Procurar…</code> e selecione o arquivo <code>manifest.xml</code></li>
     <li>Clique em <code>Adicionar</code></li>
@@ -182,7 +182,7 @@ ol li{margin:6px 0}
       <li>Dê duplo-clique no <code>Claude Gateway.vbs</code></li>
       <li>A interface gráfica abrirá com o painel de controle</li>
       <li>Clique em <span class="highlight">Iniciar</span> para ativar o proxy</li>
-      <li>O indicador mudará para <span style="color:#22c55e;font-weight:600">● ATIVO</span></li>
+      <li>O indicador mudará para <span style="color:#22c55e;font-weight:600"><span aria-hidden="true">●</span> ATIVO</span></li>
     </ol>
   </div>
   <div class="os-content" id="os-mac-4" role="tabpanel" aria-labelledby="tab-mac-4" tabindex="0">
@@ -202,7 +202,7 @@ ol li{margin:6px 0}
   <p>O add-in funciona no <strong>Word</strong>, <strong>Excel</strong> e <strong>PowerPoint</strong>. O processo é o mesmo em todos:</p>
   <ol>
     <li>Abra o <span class="highlight">Word</span>, <span class="highlight">Excel</span> ou <span class="highlight">PowerPoint</span> Desktop</li>
-    <li>Vá em <code>Suplementos</code> → <code>Mais Suplementos</code> → Pesquisar por <span class="highlight">Claude</span></li>
+    <li>Vá em <code>Suplementos</code> <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> <code>Mais Suplementos</code> <span aria-hidden="true">→</span><span class="sr-only"> e depois </span> Pesquisar por <span class="highlight">Claude</span></li>
     <li>O painel do Claude abrirá à direita</li>
     <li>Escolha a opção <span class="highlight">Cloud provider or gateway</span></li>
     <li>A <strong>Gateway URL</strong> deve ser a que o Claude Gateway gerou ao iniciar o proxy, basta copiar e colar</li>
