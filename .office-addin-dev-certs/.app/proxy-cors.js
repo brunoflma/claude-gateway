@@ -56,6 +56,8 @@ function loadConfig() {
     lastConfigLoad = now;
     return cachedConfig;
   } catch (e) {
+    // 🛡️ Sentinel: Always update lastConfigLoad to prevent DoS via cache bypass
+    lastConfigLoad = now;
     if (cachedConfig) return cachedConfig;
     return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
   }
