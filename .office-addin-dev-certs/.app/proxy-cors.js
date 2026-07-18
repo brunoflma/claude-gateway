@@ -56,6 +56,9 @@ function loadConfig() {
     lastConfigLoad = now;
     return cachedConfig;
   } catch (e) {
+    // 🛡️ Sentinel: [MEDIUM] Update cache timestamp even on error to prevent cache bypass DoS
+    // that would force synchronous file reads on every subsequent request
+    lastConfigLoad = now;
     if (cachedConfig) return cachedConfig;
     return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
   }
