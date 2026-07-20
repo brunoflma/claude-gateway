@@ -89,7 +89,23 @@ function collect(stream, options = {}) {
       chunks.push(c);
     });
     stream.on('end', () => { if (!rejected) resolve(Buffer.concat(chunks)); });
-    stream.on('error', err => { if (!rejected) reject(err); });
+    stream.on('error', err => { if (!rejected) { rejected = true; reject(err); } });
+
+    // 🛡️ Sentinel: Fix memory/promise leak DoS by handling aborted/closed streams correctly.
+    // If a client aborts the request or connection is closed unexpectedly during streaming,
+    // the promise would hang forever without these event listeners.
+    stream.on('aborted', () => {
+      if (!rejected) {
+        rejected = true;
+        reject(new Error('Request aborted'));
+      }
+    });
+    stream.on('close', () => {
+      if (!rejected && !stream.complete) {
+        rejected = true;
+        reject(new Error('Connection closed before request completed'));
+      }
+    });
   });
 }
 
