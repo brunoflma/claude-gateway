@@ -88,8 +88,27 @@ function collect(stream, options = {}) {
       }
       chunks.push(c);
     });
-    stream.on('end', () => { if (!rejected) resolve(Buffer.concat(chunks)); });
-    stream.on('error', err => { if (!rejected) reject(err); });
+    stream.on('end', () => {
+      if (rejected) return;
+      rejected = true;
+      resolve(Buffer.concat(chunks));
+    });
+    stream.on('error', err => {
+      if (rejected) return;
+      rejected = true;
+      reject(err);
+    });
+    // 🛡️ Sentinel: [MEDIUM] Fix stream promise memory leak DoS by rejecting on ungraceful disconnects
+    stream.on('aborted', () => {
+      if (rejected) return;
+      rejected = true;
+      reject(new Error('Stream aborted'));
+    });
+    stream.on('close', () => {
+      if (rejected) return;
+      rejected = true;
+      reject(new Error('Stream closed prematurely'));
+    });
   });
 }
 
