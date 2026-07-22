@@ -90,6 +90,8 @@ function collect(stream, options = {}) {
     });
     stream.on('end', () => { if (!rejected) resolve(Buffer.concat(chunks)); });
     stream.on('error', err => { if (!rejected) reject(err); });
+    stream.on('aborted', () => { if (!rejected) { rejected = true; reject(new Error('Stream aborted')); } });
+    stream.on('close', () => { if (!rejected) { rejected = true; reject(new Error('Stream closed prematurely')); } });
   });
 }
 
@@ -759,9 +761,9 @@ https.createServer(sslOpts, (req, res) => {
       res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'Internal Server Error' } }));
     }
   });
-}).listen(PORT, () => {
+}).listen(PORT, '127.0.0.1', () => {
   const cfg = loadConfig();
-  log(`Proxy v1.0 | port:${PORT} | mode:${cfg.mode}`);
+  log(`Proxy v1.0 | port:${PORT} | mode:${cfg.mode} | host: 127.0.0.1`);
   log(`Free models: ${(cfg.free_models||[]).join(', ')}`);
   log(`Paid map: ${Object.keys(cfg.paid_model_map||{}).length} entries`);
 });
