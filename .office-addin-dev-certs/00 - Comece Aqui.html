@@ -310,6 +310,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (e.key === 'ArrowLeft') {
         nextIdx = (activeIdx - 1 + tabs.length) % tabs.length;
         e.preventDefault();
+      } else if (e.key === 'Home') {
+        nextIdx = 0;
+        e.preventDefault();
+      } else if (e.key === 'End') {
+        nextIdx = tabs.length - 1;
+        e.preventDefault();
       }
 
       if (nextIdx !== activeIdx) {
