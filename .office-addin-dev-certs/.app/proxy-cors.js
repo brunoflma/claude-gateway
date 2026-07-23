@@ -42,26 +42,43 @@ const keepAliveAgent = new https.Agent({ keepAlive: true });
 // Load config (hot-reload)
 let cachedConfig = null;
 let lastConfigLoad = 0;
+let isConfigLoading = false;
 
 function loadConfig() {
-  // ⚡ Bolt: Cache config with 2000ms TTL to prevent synchronous fs reads on every request
-  // Performance Impact: Reduces max latency by avoiding event loop blocking on hot path
-  // Benchmark: Improved throughput by ~15% under load (1000 requests in 3.2s vs 3.7s)
   const now = Date.now();
-  if (cachedConfig && (now - lastConfigLoad < 2000)) {
-    return cachedConfig;
+
+  // ⚡ Bolt: Replace synchronous polling with non-blocking stale-while-revalidate
+  // Performance Impact: Eliminates event loop blocking (fs.readFileSync) every 2000ms on the hot path.
+  // Benchmark: Prevents latency spikes in concurrent SSE streams during config reloads.
+  if (cachedConfig && now - lastConfigLoad >= 2000 && !isConfigLoading) {
+    isConfigLoading = true;
+    fs.readFile(CONFIG_PATH, 'utf-8', (err, data) => {
+      isConfigLoading = false;
+      // 🛡️ Sentinel: [MEDIUM] Fix cache bypass DoS by updating cache timestamp even on read/parse failure
+      // This prevents forcing synchronous file reads on every request if the file is missing/invalid.
+      lastConfigLoad = Date.now();
+      if (!err) {
+        try {
+          cachedConfig = JSON.parse(data);
+        } catch (e) {}
+      } else if (!cachedConfig) {
+        cachedConfig = { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+      }
+    });
   }
-  try {
-    cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-    lastConfigLoad = now;
-    return cachedConfig;
-  } catch (e) {
-    // 🛡️ Sentinel: [MEDIUM] Fix cache bypass DoS by updating cache timestamp even on read/parse failure
-    // This prevents forcing synchronous file reads on every request if the file is missing/invalid.
-    lastConfigLoad = now;
-    if (cachedConfig) return cachedConfig;
-    return { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+
+  // Initial synchronous load
+  if (!cachedConfig) {
+    try {
+      cachedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+      lastConfigLoad = now;
+    } catch (e) {
+      lastConfigLoad = now;
+      cachedConfig = { mode: 'free', free_models: ['deepseek/deepseek-v4-pro-free'], paid_model_map: {} };
+    }
   }
+
+  return cachedConfig;
 }
 
 function collect(stream, options = {}) {
