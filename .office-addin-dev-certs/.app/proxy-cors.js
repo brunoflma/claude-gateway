@@ -465,6 +465,17 @@ function streamToAnthropic(proxyRes, res, requestedModel, cors) {
   // since this object is populated dynamically using keys from external SSE data stream.
   const toolCalls = Object.create(null);
 
+  // 🛡️ Sentinel: [HIGH] Fix DoS vulnerability by aborting upstream connection when client disconnects
+  // If the client closes the connection ungracefully during an SSE stream, we must actively destroy
+  // the upstream proxyRes to prevent resource exhaustion and wasted API credits.
+  res.on('close', () => {
+    if (!done) {
+      log(`  CLIENT DISCONNECTED: Aborting upstream stream`);
+      proxyRes.destroy();
+      done = true;
+    }
+  });
+
   const finish = (reason) => {
     if (done) return;
     done = true;
