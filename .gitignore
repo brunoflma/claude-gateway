@@ -1,0 +1,2 @@
+# Runtime logs are generated locally and must not be committed.
+.office-addin-dev-certs/.app/logs/
