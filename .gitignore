@@ -1,0 +1,5 @@
+# TLS material is generated locally on the first gateway start and must never be committed.
+.office-addin-dev-certs/.app/localhost.key
+.office-addin-dev-certs/.app/localhost.crt
+.office-addin-dev-certs/localhost.crt
+.office-addin-dev-certs/.app/logs/

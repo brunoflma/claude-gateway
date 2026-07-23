@@ -1,0 +1,14 @@
+{
+  "name": "claude-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development test commands for the self-contained Claude Gateway distribution.",
+  "scripts": {
+    "test": "npm run test:timeout && npm run test:origin-policy",
+    "test:timeout": "node test_timeout.js",
+    "test:origin-policy": "node test_origin_policy.js"
+  },
+  "engines": {
+    "node": ">=22.16.0"
+  }
+}
