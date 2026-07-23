@@ -1,12 +1,10 @@
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
+const http = require('http');
 
-const keepAliveAgent = new https.Agent({ keepAlive: true });
+const keepAliveAgent = new http.Agent({ keepAlive: true });
 
 function makeUpstreamRequest(url, bodyBuf, headers, method, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
-    const pr = https.request(url, { method, headers, rejectUnauthorized: false, agent: keepAliveAgent }, resolve);
+    const pr = http.request(url, { method, headers, agent: keepAliveAgent }, resolve);
     pr.setTimeout(timeoutMs, () => {
       pr.destroy(new Error(`Upstream request timeout after ${timeoutMs}ms`));
     });
@@ -16,12 +14,7 @@ function makeUpstreamRequest(url, bodyBuf, headers, method, timeoutMs = 120000) 
   });
 }
 
-const sslOpts = {
-  key: fs.readFileSync(path.join(__dirname, '.office-addin-dev-certs/.app/localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '.office-addin-dev-certs/.app/localhost.crt')),
-};
-
-const server = https.createServer(sslOpts, (req, res) => {
+const server = http.createServer((req, res) => {
   if (req.url === '/success') {
     res.writeHead(200);
     res.end('ok');
@@ -40,7 +33,7 @@ server.listen(8444, async () => {
 
   // Test 1: Success
   try {
-    const res = await makeUpstreamRequest('https://localhost:8444/success', Buffer.from(''), {}, 'GET', 1000);
+    const res = await makeUpstreamRequest('http://localhost:8444/success', Buffer.from(''), {}, 'GET', 1000);
     console.log('Success test passed: got status', res.statusCode);
     passed++;
   } catch(e) {
@@ -49,7 +42,7 @@ server.listen(8444, async () => {
 
   // Test 2: Timeout (connection hangs)
   try {
-    await makeUpstreamRequest('https://localhost:8444/timeout', Buffer.from(''), {}, 'GET', 500);
+    await makeUpstreamRequest('http://localhost:8444/timeout', Buffer.from(''), {}, 'GET', 500);
     console.error('Timeout test failed: expected error');
   } catch(e) {
     if (e.message.includes('timeout after')) {
@@ -62,7 +55,7 @@ server.listen(8444, async () => {
 
   // Test 3: Stream Idle
   try {
-    const res = await makeUpstreamRequest('https://localhost:8444/stream_idle', Buffer.from(''), {}, 'GET', 500);
+    const res = await makeUpstreamRequest('http://localhost:8444/stream_idle', Buffer.from(''), {}, 'GET', 500);
     res.on('data', () => {}); // consume data
     await new Promise((resolve, reject) => {
       res.on('end', resolve);

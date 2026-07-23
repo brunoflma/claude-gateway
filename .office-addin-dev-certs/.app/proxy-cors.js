@@ -5,6 +5,7 @@
 // - Reads config from gateway-config.json (hot-reloaded on each request)
 // ============================================================================
 const https = require('https');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -28,11 +29,102 @@ function log(...args) {
   logStream.write(line + '\n');
 }
 
-// SSL
-const sslOpts = {
-  key: fs.readFileSync(path.join(__dirname, 'localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, 'localhost.crt')),
-};
+const SSL_KEY_PATH = path.join(__dirname, 'localhost.key');
+const SSL_CERT_PATH = path.join(__dirname, 'localhost.crt');
+const INSTALL_CERT_PATH = path.join(__dirname, '..', 'localhost.crt');
+
+function derLength(length) {
+  if (length < 128) return Buffer.from([length]);
+  const bytes = [];
+  while (length > 0) {
+    bytes.unshift(length & 0xff);
+    length >>= 8;
+  }
+  return Buffer.from([0x80 | bytes.length, ...bytes]);
+}
+
+function der(tag, ...parts) {
+  const content = Buffer.concat(parts);
+  return Buffer.concat([Buffer.from([tag]), derLength(content.length), content]);
+}
+
+function derInteger(value) {
+  let bytes = Buffer.isBuffer(value) ? Buffer.from(value) : Buffer.from([value]);
+  while (bytes.length > 1 && bytes[0] === 0) bytes = bytes.subarray(1);
+  if (bytes[0] & 0x80) bytes = Buffer.concat([Buffer.from([0]), bytes]);
+  return der(0x02, bytes);
+}
+
+function derOid(oid) {
+  const values = oid.split('.').map(Number);
+  const bytes = [values[0] * 40 + values[1]];
+  for (const value of values.slice(2)) {
+    const encoded = [value & 0x7f];
+    for (let remaining = value >> 7; remaining > 0; remaining >>= 7) encoded.unshift(0x80 | (remaining & 0x7f));
+    bytes.push(...encoded);
+  }
+  return der(0x06, Buffer.from(bytes));
+}
+
+function derUtf8(value) { return der(0x0c, Buffer.from(value, 'utf8')); }
+function derSequence(...parts) { return der(0x30, ...parts); }
+function derSet(...parts) { return der(0x31, ...parts); }
+function derBitString(value) { return der(0x03, Buffer.from([0]), value); }
+function derNull() { return Buffer.from([0x05, 0x00]); }
+
+function derTime(date) {
+  const value = date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z').slice(2);
+  return der(0x17, Buffer.from(value));
+}
+
+function pem(label, value) {
+  return `-----BEGIN ${label}-----\n${value.toString('base64').match(/.{1,64}/g).join('\n')}\n-----END ${label}-----\n`;
+}
+
+function certificateName() {
+  return derSequence(derSet(derSequence(derOid('2.5.4.3'), derUtf8('localhost'))));
+}
+
+function generateLocalCertificate() {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const signatureAlgorithm = derSequence(derOid('1.2.840.113549.1.1.11'), derNull());
+  const now = new Date();
+  const expires = new Date(now);
+  expires.setFullYear(expires.getFullYear() + 1);
+  const subject = certificateName();
+  const subjectAltName = derSequence(
+    der(0x82, Buffer.from('localhost')),
+    der(0x87, Buffer.from([127, 0, 0, 1])),
+    der(0x87, Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+  );
+  const extensions = derSequence(
+    derSequence(derOid('2.5.29.17'), der(0x04, subjectAltName)),
+    derSequence(derOid('2.5.29.19'), der(0x04, derSequence()))
+  );
+  const tbs = derSequence(
+    der(0xa0, derInteger(2)),
+    derInteger(crypto.randomBytes(16)),
+    signatureAlgorithm,
+    subject,
+    derSequence(derTime(new Date(now.getTime() - 24 * 60 * 60 * 1000)), derTime(expires)),
+    subject,
+    publicKey.export({ type: 'spki', format: 'der' }),
+    der(0xa3, extensions)
+  );
+  const certificate = derSequence(tbs, signatureAlgorithm, derBitString(crypto.sign('sha256', tbs, privateKey)));
+  const key = privateKey.export({ type: 'pkcs8', format: 'pem' });
+  const cert = pem('CERTIFICATE', certificate);
+
+  fs.writeFileSync(SSL_KEY_PATH, key, { mode: 0o600 });
+  fs.writeFileSync(SSL_CERT_PATH, cert);
+  fs.writeFileSync(INSTALL_CERT_PATH, cert);
+  return { key, cert };
+}
+
+// SSL certificates are generated locally, never shipped with a private key.
+const sslOpts = fs.existsSync(SSL_KEY_PATH) && fs.existsSync(SSL_CERT_PATH)
+  ? { key: fs.readFileSync(SSL_KEY_PATH), cert: fs.readFileSync(SSL_CERT_PATH) }
+  : generateLocalCertificate();
 
 // ⚡ Bolt: Global Keep-Alive Agent for Connection Pooling
 // Performance Impact: Eliminates ~100-200ms TLS handshake overhead per request

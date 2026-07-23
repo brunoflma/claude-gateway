@@ -107,7 +107,7 @@ ol li{margin:6px 0}
     <span class="d"><span aria-hidden="true">📁</span> .office-addin-dev-certs/</span><br>
     ├── <span class="f">00 - Comece Aqui.html</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Este guia<br>
     ├── <span class="f">Claude Gateway.vbs</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Lançador (Windows)<br>
-    ├── <span class="f">localhost.crt</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Certificado SSL<br>
+    ├── <span class="f">localhost.crt</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Certificado SSL gerado localmente<br>
     ├── <span class="f">manifest.xml</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Manifesto do Add-in<br>
     └── <span class="d"><span aria-hidden="true">📁</span> .app/</span> &nbsp;<span aria-hidden="true">←</span><span class="sr-only"> refere-se a </span> Pasta oculta (não modificar)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="f">proxy-cors.js</span><br>
@@ -121,7 +121,7 @@ ol li{margin:6px 0}
 <!-- PASSO 2 -->
 <section class="section">
   <h2><span class="step-num">2</span> Instalar o Certificado SSL</h2>
-  <p>O proxy usa HTTPS local. O certificado <code>localhost.crt</code> precisa ser instalado como confiável.</p>
+  <p>O proxy usa HTTPS local. Abra o Claude Gateway uma vez para gerar o certificado <code>localhost.crt</code>, depois instale-o como confiável.</p>
   <div class="os-tabs" role="tablist" aria-label="Sistema Operacional">
     <button id="tab-win-2" class="os-tab active" role="tab" aria-selected="true" aria-controls="os-win-2" onclick="switchOS('win',this)"><span aria-hidden="true">🪟</span> Windows</button>
     <button id="tab-mac-2" class="os-tab" role="tab" aria-selected="false" aria-controls="os-mac-2" tabindex="-1" onclick="switchOS('mac',this)"><span aria-hidden="true">🍎</span> macOS</button>

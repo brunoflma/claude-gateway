@@ -31,9 +31,10 @@ Word/Excel/PowerPoint → Add-in Claude → Proxy local (HTTPS) → ZenMux → M
 2. Extraia o conteúdo na pasta do seu sistema:
    - **Windows:** `C:\Users\SEU_USUARIO\.office-addin-dev-certs\`
    - **macOS:** `~/.office-addin-dev-certs/`
-3. Instale o certificado SSL (`localhost.crt`) como confiável
-4. Carregue o `manifest.xml` via Office Online (Word/Excel/PowerPoint)
-5. Abra o guia `00 - Comece Aqui.html` para instruções detalhadas
+3. Abra `Claude Gateway.vbs` uma vez para gerar o certificado local
+4. Instale o certificado SSL gerado (`localhost.crt`) como confiável
+5. Carregue o `manifest.xml` via Office Online (Word/Excel/PowerPoint)
+6. Abra o guia `00 - Comece Aqui.html` para instruções detalhadas
 
 ---
 
@@ -43,12 +44,13 @@ Word/Excel/PowerPoint → Add-in Claude → Proxy local (HTTPS) → ZenMux → M
 .office-addin-dev-certs/
 ├── 00 - Comece Aqui.html    ← Guia de instalação
 ├── Claude Gateway.vbs       ← Lançador (Windows)
-├── localhost.crt             ← Certificado SSL
+├── localhost.crt             ← Certificado SSL gerado localmente
 ├── manifest.xml              ← Manifesto do Add-in
 └── .app/                     ← Pasta oculta (não modificar)
     ├── proxy-cors.js
     ├── gateway_gui.py
     ├── gateway-config.json
+    ├── localhost.key         ← Chave privada gerada localmente (não versionada)
     ├── node/                 ← Node.js embutido
     └── python/               ← Python embutido
 ```
