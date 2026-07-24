@@ -208,11 +208,12 @@ const ANTHROPIC_MODELS = {
 };
 
 // Free mode: map Anthropic model names → specific free models
-const FREE_MODEL_MAP = {
-  'claude-opus-4-7': 'deepseek/deepseek-v4-pro-free',
-  'claude-opus-4-6': 'deepseek/deepseek-v4-pro-free',
-  'claude-sonnet-4-6': 'deepseek/deepseek-v4-flash-free',
-};
+// 🛡️ Sentinel: Initialize with Object.create(null) to prevent Prototype Pollution
+// from untrusted model strings sent by the client.
+const FREE_MODEL_MAP = Object.create(null);
+FREE_MODEL_MAP['claude-opus-4-7'] = 'deepseek/deepseek-v4-pro-free';
+FREE_MODEL_MAP['claude-opus-4-6'] = 'deepseek/deepseek-v4-pro-free';
+FREE_MODEL_MAP['claude-sonnet-4-6'] = 'deepseek/deepseek-v4-flash-free';
 
 // Convert Anthropic tool definition → OpenAI function tool
 function anthropicToolToOpenAI(tool) {
